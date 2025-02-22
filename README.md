@@ -9,3 +9,11 @@ The Dalitz-plot decomposition related parts are:
 2. `Amplitude.cxx`, used to perform sum in Eq. 3 in your article.
 3. `Event.cxx`, saving the event information and calculating the angles (alignment, scattering, wigner rotation...)
 
+## Notebooks
+
+Notebooks are run with [`Pluto`](https://github.com/fonsp/Pluto.jl).
+
+Follow [simple instructions](https://plutojl.org/#install) to run:
+1. Install julia
+2. Add pluto
+3. Open notebook
