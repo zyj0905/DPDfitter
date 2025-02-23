@@ -172,25 +172,50 @@ function intensity_e⁺e⁻(model,
 	end
 end
 
+# ╔═╡ 3c9e01e7-d365-4bfa-8148-7a3a83679dcd
+### Intensity is the same
+
 # ╔═╡ f4519c8e-97d9-46fa-88ee-c7e4357a27b4
 intensity_e⁺e⁻(model1, angle_Z_chain, σs1; refζs=refζs1)
 
 # ╔═╡ 2e20dffb-dcf1-4f30-a03d-3cb0b4b58cbc
 intensity_e⁺e⁻(model2, angle_Z_chain, σs2; refζs=refζs2)
 
+# ╔═╡ 50258596-aba7-4b31-be42-c8bbe194533a
+### Angular distributions are the same
+
 # ╔═╡ 2b1c0af3-ad12-447d-a287-53d1dddb1c65
-begin
+let
 	kw = (ylim=(0,:auto), fill=0, α=0.4, linealpha=1, lw=3, leg=:bottom)
-	# 
+	model, σs, refζs = model1, σs1, refζs1
+	#
 	plot(size=(900,300), layout=grid(1,3))
 	plot!(-π,π; kw..., sp=1, xlab="α") do α
-		intensity_e⁺e⁻(model2, (; angle_Z_chain..., α), σs2; refζs=refζs2)
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., α), σs; refζs)
 	end
 	plot!(-1,1; kw..., sp=2, xlab="cosβ") do cosβ
-		intensity_e⁺e⁻(model2, (; angle_Z_chain..., cosβ), σs2; refζs=refζs2)
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., cosβ), σs; refζs)
 	end, 
 	plot!(-π,π; kw..., sp=3, xlab="γ") do γ
-		intensity_e⁺e⁻(model2, (; angle_Z_chain..., γ), σs2; refζs=refζs2)
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., γ), σs; refζs)
+	end
+	plot!(bottom_margin=4mm)
+end
+
+# ╔═╡ 4121a632-bb4b-44da-93cc-acffa0d1d801
+let
+	kw = (ylim=(0,:auto), fill=0, α=0.4, linealpha=1, lw=3, leg=:bottom)
+	model, σs, refζs = model2, σs2, refζs2
+	#
+	plot(size=(900,300), layout=grid(1,3))
+	plot!(-π,π; kw..., sp=1, xlab="α") do α
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., α), σs2; refζs)
+	end
+	plot!(-1,1; kw..., sp=2, xlab="cosβ") do cosβ
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., cosβ), σs2; refζs)
+	end, 
+	plot!(-π,π; kw..., sp=3, xlab="γ") do γ
+		intensity_e⁺e⁻(model, (; angle_Z_chain..., γ), σs2; refζs)
 	end
 	plot!(bottom_margin=4mm)
 end
@@ -1528,8 +1553,11 @@ version = "1.4.1+2"
 # ╟─bfdec5e1-b57d-4d49-9cf4-efed51ca5ba9
 # ╠═aa3d4030-ea12-4fbc-846b-46cf92d51c40
 # ╠═fb848912-68c9-408b-a618-654a2e2ed62d
+# ╠═3c9e01e7-d365-4bfa-8148-7a3a83679dcd
 # ╠═f4519c8e-97d9-46fa-88ee-c7e4357a27b4
 # ╠═2e20dffb-dcf1-4f30-a03d-3cb0b4b58cbc
+# ╠═50258596-aba7-4b31-be42-c8bbe194533a
 # ╠═2b1c0af3-ad12-447d-a287-53d1dddb1c65
+# ╠═4121a632-bb4b-44da-93cc-acffa0d1d801
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
