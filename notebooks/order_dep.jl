@@ -9,6 +9,8 @@ begin
 	using ThreeBodyDecays
 	using HadronicLineshapes
 	using Plots
+	using Plots.PlotMeasures:mm
+	using Setfield
 end
 
 # ╔═╡ 45817021-f534-4a84-b67a-7ee466fdd93c
@@ -64,19 +66,45 @@ begin
 	kZ2 = 1 # resonance in (D,Dx) => (2,3)
 end
 
+# ╔═╡ 4528be08-320d-4e1e-b0a6-f8d271291e35
+function Zc_model(; k, Xlineshape, jp, Ps, tbs)
+	# all possible ls couplings
+	decay_chains = DecayChainsLS(;
+		k, Xlineshape, jp, Ps, tbs) |> vec
+	names = map(decay_chains) do ch
+		L = div(ch.HRk.two_ls[1], 2)
+		l = div(ch.Hij.two_ls[1], 2)
+		"ZsL$(L)_l$(l)"
+	end
+	#
+	println.(">> adding chains " .* names)
+	couplings = zeros.(ComplexF64, length(decay_chains))
+	ThreeBodyDecay(names .=> zip(couplings, decay_chains))
+end
+
+# ╔═╡ 830cfc0c-d695-4840-9daa-fe601ed5e546
+### First create models with null couplings
+
 # ╔═╡ bb5a9853-5fa7-4720-81af-f0261c9584be
-model1 = let
-	k = kZ1
-	dc = DecayChainLS(; k, Xlineshape=lineshape_Zc, jp=jp_Zc, Ps=Ps1, tbs=tbs1)
-	ThreeBodyDecay(["Zc" => (1.0, dc)])
-end;
+pure_model1 = Zc_model(; k=kZ1, Xlineshape=lineshape_Zc, jp=jp_Zc, Ps=Ps1, tbs=tbs1)
 
 # ╔═╡ f7ebe7fa-c92b-44b7-86d5-bd44a8e64041
-model2 = let
-	k = kZ2
-	dc = DecayChainLS(; k, Xlineshape=lineshape_Zc, jp=jp_Zc, Ps=Ps2, tbs=tbs2)
-	ThreeBodyDecay(["Zc" => (1.0, dc)])
+pure_model2 = Zc_model(; k=kZ2, Xlineshape=lineshape_Zc, jp=jp_Zc, Ps=Ps2, tbs=tbs2)
+
+# ╔═╡ 299cc215-c096-4ff7-babc-ad9f621c633e
+### Pick one wave and set non-zero coupling to it
+
+# ╔═╡ d08db356-aa30-4bee-ac27-ff0562f2340f
+begin
+	index_of_non_zero = 2
+	model1 = @set pure_model1.couplings[index_of_non_zero] = 1.0+0.0im
+	model2 = @set pure_model2.couplings[index_of_non_zero] = 1.0+0.0im
 end;
+
+# ╔═╡ 3723f777-d126-49e0-9fbe-dbe319afb1e0
+md"""
+### Unpolarized intensity
+"""
 
 # ╔═╡ 5c9c9417-6734-48cd-bbc0-7fe168ef662a
 plot(layout=grid(1,2), size=(600, 250), title=["order1" "order2"],
@@ -98,21 +126,87 @@ md"""
 """
 
 # ╔═╡ eaf92b23-3eaa-4f85-8eb6-fcb1e1770951
-amplitude(model1, σs1, tbs1.two_js)
+amplitude(model1, σs1, tbs1.two_js; refζs=[2,2,2,2])
 
 # ╔═╡ f8e85b93-6248-4335-bb0b-56cada25b9d9
-amplitude(model2, σs2, tbs2.two_js)
+amplitude(model2, σs2, tbs2.two_js; refζs=[1,1,1,1])
+
+# ╔═╡ 7718cc7c-31f6-422e-abaf-23e5e896112e
+md"""
+**Adjusting reference topology**:
+two amplitudes become equal once the reference channel for alignement is the same
+"""
+
+# ╔═╡ 5a336b1c-4c43-4044-ba8d-892f483215c1
+begin # which topology is used for each particle
+	refζs1 = [kZ1,kZ1,kZ1,kZ1] # [p1,p2,p3,p0]
+	refζs2 = [kZ2,kZ2,kZ2,kZ2] # [p1,p2,p3,p0]
+end;
+
+# ╔═╡ fbf45905-a6b0-4f7d-8a26-0e7df277315e
+amplitude(model1, σs1, tbs1.two_js; refζs=refζs1)
+
+# ╔═╡ e9620b26-7478-4987-a8f4-3d74d398029e
+amplitude(model2, σs2, tbs2.two_js; refζs=refζs2)
+
+# ╔═╡ bfdec5e1-b57d-4d49-9cf4-efed51ca5ba9
+md"""
+### $e^+e^- \to J/\psi$ with polarization 
+"""
+
+# ╔═╡ aa3d4030-ea12-4fbc-846b-46cf92d51c40
+angle_Z_chain = (; α=0.3, cosβ=0.4, γ=0.3)
+
+# ╔═╡ fb848912-68c9-408b-a618-654a2e2ed62d
+function intensity_e⁺e⁻(model,
+	angles::ThreeBodyDecays.PlaneOrientation, σs::MandelstamTuple; kw...)
+	# 
+	_A = amplitude(model, angles, σs; kw...)
+	two_js = spins(model)
+	# 
+	sum(itr(two_js)) do two_λs # iterate overall helicities
+		two_λs[4] == 0 && return 0.0 # skip intensity λ(J/ψ) = 0
+		# 
+		indices = div.(two_λs .+ collect(two_js), 2) .+ 1
+		abs2(_A[indices...])
+	end
+end
+
+# ╔═╡ f4519c8e-97d9-46fa-88ee-c7e4357a27b4
+intensity_e⁺e⁻(model1, angle_Z_chain, σs1; refζs=refζs1)
+
+# ╔═╡ 2e20dffb-dcf1-4f30-a03d-3cb0b4b58cbc
+intensity_e⁺e⁻(model2, angle_Z_chain, σs2; refζs=refζs2)
+
+# ╔═╡ 2b1c0af3-ad12-447d-a287-53d1dddb1c65
+begin
+	kw = (ylim=(0,:auto), fill=0, α=0.4, linealpha=1, lw=3, leg=:bottom)
+	# 
+	plot(size=(900,300), layout=grid(1,3))
+	plot!(-π,π; kw..., sp=1, xlab="α") do α
+		intensity_e⁺e⁻(model2, (; angle_Z_chain..., α), σs2; refζs=refζs2)
+	end
+	plot!(-1,1; kw..., sp=2, xlab="cosβ") do cosβ
+		intensity_e⁺e⁻(model2, (; angle_Z_chain..., cosβ), σs2; refζs=refζs2)
+	end, 
+	plot!(-π,π; kw..., sp=3, xlab="γ") do γ
+		intensity_e⁺e⁻(model2, (; angle_Z_chain..., γ), σs2; refζs=refζs2)
+	end
+	plot!(bottom_margin=4mm)
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 HadronicLineshapes = "49c9d978-1f9d-4e96-a984-0a9783c0b9bf"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Setfield = "efcf1570-3423-57d1-acb7-fd33fddbac46"
 ThreeBodyDecays = "e6563dab-9ca1-5843-bde3-2ccf38d63843"
 
 [compat]
 HadronicLineshapes = "~0.4.1"
 Plots = "~1.40.9"
+Setfield = "~1.1.1"
 ThreeBodyDecays = "~0.12.3"
 """
 
@@ -122,7 +216,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.3"
 manifest_format = "2.0"
-project_hash = "63a4332a5b354bfde735aa1cd997d0a20e8ab8d3"
+project_hash = "b5103b7a688ae56da52774cdca4f508485cfe97c"
 
 [[deps.AliasTables]]
 deps = ["PtrArrays", "Random"]
@@ -1414,13 +1508,28 @@ version = "1.4.1+2"
 # ╟─c491b831-172b-4a73-aba5-14872e59710a
 # ╠═4c705fbb-b298-4fa1-8e6f-63dfec569d3b
 # ╠═f422f113-813e-461d-9025-ec10db3fd876
+# ╠═4528be08-320d-4e1e-b0a6-f8d271291e35
+# ╠═830cfc0c-d695-4840-9daa-fe601ed5e546
 # ╠═bb5a9853-5fa7-4720-81af-f0261c9584be
 # ╠═f7ebe7fa-c92b-44b7-86d5-bd44a8e64041
+# ╠═299cc215-c096-4ff7-babc-ad9f621c633e
+# ╠═d08db356-aa30-4bee-ac27-ff0562f2340f
+# ╟─3723f777-d126-49e0-9fbe-dbe319afb1e0
 # ╠═5c9c9417-6734-48cd-bbc0-7fe168ef662a
 # ╠═12c98794-db98-4ce2-8091-7bae2b903b7b
 # ╠═34674b88-20a6-4392-85e1-4155583dbc71
 # ╟─c029dd76-a030-4d2d-8155-6e78331240d5
 # ╠═eaf92b23-3eaa-4f85-8eb6-fcb1e1770951
 # ╠═f8e85b93-6248-4335-bb0b-56cada25b9d9
+# ╟─7718cc7c-31f6-422e-abaf-23e5e896112e
+# ╠═5a336b1c-4c43-4044-ba8d-892f483215c1
+# ╠═fbf45905-a6b0-4f7d-8a26-0e7df277315e
+# ╠═e9620b26-7478-4987-a8f4-3d74d398029e
+# ╟─bfdec5e1-b57d-4d49-9cf4-efed51ca5ba9
+# ╠═aa3d4030-ea12-4fbc-846b-46cf92d51c40
+# ╠═fb848912-68c9-408b-a618-654a2e2ed62d
+# ╠═f4519c8e-97d9-46fa-88ee-c7e4357a27b4
+# ╠═2e20dffb-dcf1-4f30-a03d-3cb0b4b58cbc
+# ╠═2b1c0af3-ad12-447d-a287-53d1dddb1c65
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
