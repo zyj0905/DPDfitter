@@ -49,8 +49,11 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         double alpha = (-T4_1).Phi();
         double beta = (-T4_1).Theta();
         TVector3 plane23 = T4_2.Vect().Cross(T4_3.Vect());
-        TVector3 Y_axis(0,1,0);
-        double gamma = plane23.Angle(Y_axis);
+        //TVector3 Y_axis(0,1,0);
+        //double gamma = Y_axis.Angle(plane23);
+        TVector3 Z_axis(0,0,1);
+        TVector3 plane1Z = T4_1.Vect().Cross(Z_axis);
+        double gamma = (plane1Z).Angle(plane23);
 
         //Create Event
         Event evt;

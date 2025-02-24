@@ -339,12 +339,12 @@ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu, double la
                     //First decay
                     double wigner_smallD1 = Wigner_smallD(J,nu,tau-lamp_k,theta1_k);
                     if(wigner_smallD1==0){continue;}
-                    DeviceComplex Helicity_coup1 = Helicity_HCcoupling(J,s,tau,spin_k,lamp_k,mom1_k,mychain,1);
+                    DeviceComplex Helicity_coup1 = pow(-1,spin_k-lamp_k)*Helicity_HCcoupling(J,s,tau,spin_k,lamp_k,mom1_k,mychain,1);
                     //The Breit-Wigner term is excluded
                     //Second decay
                     double wigner_smallD2 = Wigner_smallD(s,tau,lamp_i-lamp_j,theta2_ij);
                     if(wigner_smallD2==0){continue;}
-                    DeviceComplex Helicity_coup2 = Helicity_HCcoupling(s,spin_i,lamp_i,spin_j,lamp_j,mom2_k,mychain,2);
+                    DeviceComplex Helicity_coup2 = pow(-1,spin_j-lamp_j)*Helicity_HCcoupling(s,spin_i,lamp_i,spin_j,lamp_j,mom2_k,mychain,2);
                     //Wigner rotations
                     if(k==1){lamp_1 = lamp_k; lamp_2 = lamp_i; lamp_3 = lamp_j;}
                     if(k==2){lamp_1 = lamp_j; lamp_2 = lamp_k; lamp_3 = lamp_i;}
@@ -355,6 +355,8 @@ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu, double la
                     double rotation2 = Wigner_smallD(spin[2],lamp_3,lam[2],xi3_k);
 
                     DeviceComplex rslt = wigner_smallD1*Helicity_coup1*wigner_smallD2*Helicity_coup2*rotation0*rotation1*rotation2;
+                    //cout<<wigner_smallD1<<" "<<Helicity_coup1.real<<" "<<wigner_smallD2<<" "<<Helicity_coup2.real<<endl;
+                    //cout<<rotation0<<" "<<rotation1<<" "<<rotation2<<endl;
                     sum = rslt + sum;
                 }
             }
