@@ -311,7 +311,7 @@ __device__ DeviceComplex DPD::Helicity_HCcoupling(double J, double j1, double la
 __device__ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu, double lam[3], double spin[3], Event* evt, int k, DecayChain* mychain){
     double prefix = sqrt(2*J+1)*sqrt(2*s+1);
 
-    //All angles HERE are cos(theta)
+    //All angles HERE are (theta)
     double theta1_k = evt->alignment_angle_func(k);
     double theta2_ij = evt->scatter_angle_func(k);
     double mom1_k = evt->break_mom1_func(k);
@@ -319,8 +319,6 @@ __device__ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu
     double xi1_k = evt->wrotation_angle_func(1,k);
     double xi2_k = evt->wrotation_angle_func(2,k);
     double xi3_k = evt->wrotation_angle_func(3,k);
-    //double theta1_k(1.),theta2_ij(1.),mom1_k(1.),mom2_k(1.),xi1_k(1.),xi2_k(1.),xi3_k(1.);
-    //printf("%f %f %f %f %f %f %f\n",theta1_k,theta2_ij,mom1_k,mom2_k,xi1_k,xi2_k,xi3_k);
 
     double spin_i(-1),spin_j(-1),spin_k(-1);
     if(k==1){spin_i = spin[1]; spin_j = spin[2]; spin_k = spin[0];}
@@ -337,14 +335,14 @@ __device__ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu
                 for(double lamp_k = -spin_k; lamp_k<=spin_k; lamp_k++){
                     
                     //First decay
-                    double wigner_smallD1 = Wigner_smallD(J,nu,tau-lamp_k,theta1_k);
+                    double wigner_smallD1 = Wigner_smallD(J,nu,tau-lamp_k,-theta1_k);
                     if(wigner_smallD1==0){continue;}
-                    DeviceComplex Helicity_coup1 = Helicity_HCcoupling(J,s,tau,spin_k,lamp_k,mom1_k,mychain,1);
+                    DeviceComplex Helicity_coup1 = pow(-1,spin_k-lamp_k)*Helicity_HCcoupling(J,s,tau,spin_k,lamp_k,mom1_k,mychain,1);
                     //The Breit-Wigner term is excluded
                     //Second decay
                     double wigner_smallD2 = Wigner_smallD(s,tau,lamp_i-lamp_j,theta2_ij);
                     if(wigner_smallD2==0){continue;}
-                    DeviceComplex Helicity_coup2 = Helicity_HCcoupling(s,spin_i,lamp_i,spin_j,lamp_j,mom2_k,mychain,2);
+                    DeviceComplex Helicity_coup2 = pow(-1,spin_j-lamp_j)*Helicity_HCcoupling(s,spin_i,lamp_i,spin_j,lamp_j,mom2_k,mychain,2);
                     //Wigner rotations
                     if(k==1){lamp_1 = lamp_k; lamp_2 = lamp_i; lamp_3 = lamp_j;}
                     if(k==2){lamp_1 = lamp_j; lamp_2 = lamp_k; lamp_3 = lamp_i;}

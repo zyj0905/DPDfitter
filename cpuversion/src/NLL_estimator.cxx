@@ -12,12 +12,11 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
     if(file_type==2){ evt_mc = Ntot; array_evt_mc = new Event[Ntot];}
     if(file_type==3){ evt_mcT = Ntot; array_evt_mcT = new Event[Ntot];}
 
+    TLorentzVector T4_1,T4_2,T4_3,T4_sec_1,T4_sec_2;
     double p4_1[4],p4_2[4],p4_3[4];
-    TLorentzVector T4_1,T4_2,T4_3;
     chain->SetBranchAddress(p4_1_name,&p4_1);
     chain->SetBranchAddress(p4_2_name,&p4_2);
     chain->SetBranchAddress(p4_3_name,&p4_3);
-
     double p4_sec1[4], p4_sec2[4];
     if(with_sec==true){
         chain->SetBranchAddress(p4_dau1_name_sec,&p4_sec1);
@@ -32,6 +31,10 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         T4_1.SetPxPyPzE(p4_1[0],p4_1[1],p4_1[2],p4_1[3]);
         T4_2.SetPxPyPzE(p4_2[0],p4_2[1],p4_2[2],p4_2[3]);
         T4_3.SetPxPyPzE(p4_3[0],p4_3[1],p4_3[2],p4_3[3]);
+        if(with_sec==true){
+            T4_sec_1.SetPxPyPzE(p4_sec1[0],p4_sec1[1],p4_sec1[2],p4_sec1[3]);
+            T4_sec_2.SetPxPyPzE(p4_sec2[0],p4_sec2[1],p4_sec2[2],p4_sec2[3]);
+        }
 
         double sigma1 = pow((T4_2+T4_3).M(),2.0);
         double sigma2 = pow((T4_1+T4_3).M(),2.0);
@@ -45,15 +48,15 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         T4_1.Boost(boostVector);
         T4_2.Boost(boostVector);
         T4_3.Boost(boostVector);
+        if(with_sec==true){T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);}
 
         double alpha = (-T4_1).Phi();
         double beta = (-T4_1).Theta();
-        TVector3 plane23 = T4_2.Vect().Cross(T4_3.Vect());
-        //TVector3 Y_axis(0,1,0);
-        //double gamma = Y_axis.Angle(plane23);
+        
+        TVector3 plane23 = T4_3.Vect().Cross(T4_2.Vect());
         TVector3 Z_axis(0,0,1);
-        TVector3 plane1Z = T4_1.Vect().Cross(Z_axis);
-        double gamma = (plane1Z).Angle(plane23);
+        TVector3 plane1Z = Z_axis.Cross(T4_1.Vect());
+        double gamma = ((plane1Z.Cross(plane23)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * (plane1Z).Angle(plane23);
 
         //Create Event
         Event evt;
@@ -64,24 +67,19 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         //secondary decay
         if(with_sec==true){
             double theta_sec(0),phi_sec(0);
-            int idx_sec = amp_obj->idx_sec;
-
-            TLorentzVector T4_123 = T4_1 + T4_2 + T4_3;
-            TLorentzVector T4_sec_1, T4_sec_2;
-            T4_sec_1.SetPxPyPzE(p4_sec1[0],p4_sec1[1],p4_sec1[2],p4_sec1[3]);
-            T4_sec_2.SetPxPyPzE(p4_sec2[0],p4_sec2[1],p4_sec2[2],p4_sec2[3]);
+            int idx_sec = amp_obj->idx_sec;          
 
             TVector3 decay_plane_sec = (T4_sec_2.Vect()).Cross(T4_sec_1.Vect());
             TVector3 decay_plane_mom = (T4_1.Vect()).Cross(T4_2.Vect());
             phi_sec = ((decay_plane_sec.Cross(decay_plane_mom)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_sec.Angle(decay_plane_mom);
 
-            TVector3 boostVector(0,0,0);
-            if(idx_sec==1) boostVector = -T4_1.BoostVector();
-            if(idx_sec==2) boostVector = -T4_2.BoostVector();
-            if(idx_sec==3) boostVector = -T4_3.BoostVector();
-
-            T4_123.Boost(boostVector);
-            T4_sec_1.Boost(boostVector);
+            TVector3 boostVector1(0,0,0);
+            if(idx_sec==1) boostVector1 = -T4_1.BoostVector();
+            if(idx_sec==2) boostVector1 = -T4_2.BoostVector();
+            if(idx_sec==3) boostVector1 = -T4_3.BoostVector();
+            TLorentzVector T4_123 = T4_1 + T4_2 + T4_3;  
+            T4_123.Boost(boostVector1);
+            T4_sec_1.Boost(boostVector1);
             theta_sec = (-T4_123.Vect()).Angle(T4_sec_1.Vect());
             evt._second_theta = theta_sec;
             evt._second_phi = phi_sec;

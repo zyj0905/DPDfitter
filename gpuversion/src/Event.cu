@@ -53,7 +53,7 @@ __device__ double Event::alignment_angle_func(int idx){
         double _sigma3 = sigma3_func();
         double dom = sqrt_lamb_func(_mass2_mom0,_mass2_dau2,_sigma2)*sqrt_lamb_func(_mass2_mom0,_sigma1,_mass2_dau1);
         double num = (_mass2_mom0+_mass2_dau1-_sigma1)*(_mass2_mom0+_mass2_dau2-_sigma2)-2.0*_mass2_mom0*(_sigma3-_mass2_dau1-_mass2_dau2);
-        return acos(-1.0*(num/dom));
+        return -acos(1.0*(num/dom));
     }
     if(idx==3){
         double _sigma3 = sigma3_func();
@@ -100,14 +100,14 @@ __device__ double Event::wrotation_angle_func(int idx1, int idx2){
         if(idx2==3){
             double dom = sqrt_lamb_func(_mass2_mom0,_mass2_dau1,_sigma1)*sqrt_lamb_func(_sigma3,_mass2_dau1,_mass2_dau2);
             double num = 2*_mass2_dau1*(_sigma2-_mass2_mom0-_mass2_dau2) + (_mass2_mom0+_mass2_dau1-_sigma1)*(_sigma3-_mass2_dau1-_mass2_dau2);
-            return acos(-1.0*(num/dom));
+            return -acos(1.0*(num/dom));
         }
     }
     if(idx1==2){
         if(idx2==1){
             double dom = sqrt_lamb_func(_mass2_mom0,_mass2_dau2,_sigma2)*sqrt_lamb_func(_sigma1,_mass2_dau2,_mass2_dau3);
             double num = 2*_mass2_dau2*(_sigma3-_mass2_mom0-_mass2_dau3) + (_mass2_mom0+_mass2_dau2-_sigma2)*(_sigma1-_mass2_dau2-_mass2_dau3);
-            return acos(-1.0*(num/dom));
+            return -acos(1.0*(num/dom));
         }
         if(idx2==2){
             return 0.0;
@@ -127,7 +127,7 @@ __device__ double Event::wrotation_angle_func(int idx1, int idx2){
         if(idx2==2){
             double dom = sqrt_lamb_func(_mass2_mom0,_mass2_dau3,_sigma3)*sqrt_lamb_func(_sigma2,_mass2_dau3,_mass2_dau1);
             double num = 2*_mass2_dau3*(_sigma1-_mass2_mom0-_mass2_dau1) + (_mass2_mom0+_mass2_dau3-_sigma3)*(_sigma2-_mass2_dau3-_mass2_dau1);
-            return acos(-1.0*(num/dom));
+            return -acos(1.0*(num/dom));
             
         }
         if(idx2==3){
@@ -160,7 +160,7 @@ double Event::alignment_angle_func_host(int idx){
         double _sigma3 = sigma3_func_host();
         double dom = sqrt_lamb_func_host(_mass2_mom0,_mass2_dau2,_sigma2)*sqrt_lamb_func_host(_mass2_mom0,_sigma1,_mass2_dau1);
         double num = (_mass2_mom0+_mass2_dau1-_sigma1)*(_mass2_mom0+_mass2_dau2-_sigma2)-2.0*_mass2_mom0*(_sigma3-_mass2_dau1-_mass2_dau2);
-        return acos(-1.0*(num/dom));
+        return -acos(1.0*(num/dom));
     }
     if(idx==3){
         double _sigma3 = sigma3_func_host();
