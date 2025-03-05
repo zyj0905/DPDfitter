@@ -1,12 +1,12 @@
 #include "../include/Minimize.h"
+#include <Math/GSLRndmEngines.h>
 
 void objective_function(Int_t &nrPar, Double_t *grad, Double_t &Result, Double_t *par, Int_t flag_type){
     Minimize* Minimize_obj = (Minimize*)gMinuit->GetObjectFit();
 
-    int Npar_tot(0);
+    int Npar_tot = Minimize_obj->npar_tot;
     double *arr_NLL = new double[Minimize_obj->num_NLL];
-    for(int idx_nll=0;idx_nll<Minimize_obj->num_NLL;idx_nll++){Npar_tot = Npar_tot + Minimize_obj->NLL_estimator_array[idx_nll]->N_totpar;}
-
+    
     Result = 0;
 
     for(int i=0;i<Npar_tot;i++){
@@ -29,19 +29,15 @@ void objective_function(Int_t &nrPar, Double_t *grad, Double_t &Result, Double_t
     for(int idx_nll=0;idx_nll<Minimize_obj->num_NLL;idx_nll++){cout<<arr_NLL[idx_nll]<<" ";}
     cout<<endl;
 
+    delete arr_NLL;
+
 }
 
 void Minimize::Initial_optimize(){
-    //Count the par number
-    int n_par_sum = 0;
-    for(int idx_nll=0;idx_nll<num_NLL;idx_nll++){
-        Amplitude* this_amp = NLL_estimator_array[idx_nll]->amp_obj;
-        n_par_sum = n_par_sum + (this_amp->Get_total_dynamic_par()) + (this_amp->Get_total_LS1coeff_par()+this_amp->Get_total_LS2coeff_par()) * 2;
-    }
 
     Int_t ierflg = 0;
     double arglist[10];
-    gMinuit = new TMinuit(n_par_sum);
+    gMinuit = new TMinuit(npar_tot);
     gMinuit->SetObjectFit(this);
     gMinuit->SetFCN(objective_function);
 
@@ -103,21 +99,14 @@ void Minimize::Do_HESSE(){
 
 
 void Minimize::UpdateMypar(){
-
-    int Ntot(0);
-    for(int idx_nll=0;idx_nll<num_NLL;idx_nll++){
-        NLL_estimator* mynll = NLL_estimator_array[idx_nll];
-        int n_par_tot = mynll->N_totpar;
-        Ntot = Ntot + n_par_tot;
-    }
     
-    double *par_fitted = new double[Ntot];
-    double *par_error = new double[Ntot];
-    for(int par_loop=0;par_loop<Ntot;par_loop++){
+    par_fitted = new double[npar_tot];
+    par_error = new double[npar_tot];
+    for(int par_loop=0;par_loop<npar_tot;par_loop++){
         gMinuit->GetParameter(par_loop,par_fitted[par_loop],par_error[par_loop]);
     }
 
-    for(int i=0;i<Ntot;i++){
+    for(int i=0;i<npar_tot;i++){
         //if( par_error[i] == 0 ) continue;
         for(int idx_nll=0;idx_nll<num_NLL;idx_nll++){
             NLL_estimator* mynll = NLL_estimator_array[idx_nll];
@@ -135,9 +124,6 @@ void Minimize::UpdateMypar(){
     }
 
     for(int idx_nll=0;idx_nll<num_NLL;idx_nll++){NLL_estimator_array[idx_nll]->Update_Paras();}
-
-    delete par_fitted;
-    delete par_error;
 }
 
 Json::Value Minimize::WritePar(Para* mypar){
@@ -206,4 +192,179 @@ void Minimize::SavePars(string filename, int my_idx_nll){
     std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
     writer->write(root, &os);
 	os.close();
+}
+
+
+void Minimize::SaveCovMatrix(){
+
+    Int_t npar_float = gMinuit->GetNumPars();
+    //double** cova = new double*[npar_float];
+    //for(int i=0;i<npar_float;i++){cova[i] = new double[npar_float];}
+    double cova[npar_float][npar_float];
+    cov_matrix = new double[npar_float*npar_float];
+    gMinuit->mnemat(&cova[0][0],npar_float);
+
+    //Save the Covariant Matrix
+    ofstream outfile_Cova;
+    outfile_Cova.open("./Cov_matrix.dat");
+    for(int par_loop1=0;par_loop1<npar_float;par_loop1++){
+        for(int par_loop2=0;par_loop2<npar_float;par_loop2++){
+            outfile_Cova<<cova[par_loop1][par_loop2]<<" ";
+            cov_matrix[par_loop1*npar_float+par_loop2] = cova[par_loop1][par_loop2];
+        }
+        outfile_Cova<<endl;
+    }
+    outfile_Cova.close();
+
+}
+
+void Minimize::GenerateAlterPars(int rndseed, double* genpars){
+
+    Int_t npar_float = gMinuit->GetNumPars();
+    double* par_float = new double[npar_float];
+    int count = 0;
+    for(int par_loop=0;par_loop<npar_tot;par_loop++){
+        if(par_error[par_loop]!=0){par_float[count] = par_fitted[par_loop];count++;}
+    }
+
+    ROOT::Math::GSLRandomEngine rnd;
+    rnd.Initialize();
+    rnd.SetSeed(rndseed);
+    rnd.GaussianND(npar_float, par_float, cov_matrix, genpars);
+
+    delete par_float;
+}
+
+void Minimize::Cal_FitFraction(int my_idx_nll, double** Fit_fraction, double** Fit_fraction_std, TString save_file){
+    NLL_estimator* mynll = NLL_estimator_array[my_idx_nll];
+    mynll->GetFitFraction(Fit_fraction);
+    
+    int nchain = mynll->amp_obj->nchain;
+
+    Int_t nstep = 100;
+    Int_t npar_float = gMinuit->GetNumPars();
+    double* par_float = new double[npar_float];
+
+    double*** Fit_fraction_alter = new double**[nstep];
+    for(int i=0;i<nstep;i++){
+        Fit_fraction_alter[i] = new double*[nchain];
+        for(int j=0;j<nchain;j++){
+            Fit_fraction_alter[i][j] =  new double[nchain];
+        } 
+    }
+
+    for(int idx_step=0;idx_step<nstep;idx_step++){
+
+        GenerateAlterPars(idx_step+666,par_float);
+
+        //Updated pars
+        int count = 0;
+        for(int i=0;i<npar_tot;i++){
+            if(par_error[i]==0) continue;
+            for(int idx_nll=0;idx_nll<num_NLL;idx_nll++){
+                NLL_estimator* mynll = NLL_estimator_array[idx_nll];
+                bool isfind = false;
+                Para* mypar = mynll->Search_idx_minuit(i,isfind);
+                if(isfind==true){
+                    mypar->Val = par_float[count];
+                    if(mypar->is_fixed_to==true){
+                        mypar->Val = mypar->Get_Val();
+                    }
+                }
+            }
+            count++;
+        }
+        mynll->Update_Paras();
+
+        mynll->GetFitFraction(Fit_fraction_alter[idx_step]);
+    }
+
+    //Save the obtained distribution of FFs
+    TFile* file = new TFile(save_file, "recreate");
+    TTree* my_tree = new TTree("FF_distribution","FF_distribution");
+    const int max_nres = 20;
+    double FF[max_nres][max_nres];
+    my_tree->Branch("FF", FF, Form("FF[%d][%d]/D",max_nres,max_nres));
+    for(int i=0;i<nstep;i++){
+        for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+            for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+                FF[idx_ch1][idx_ch2] = Fit_fraction_alter[i][idx_ch1][idx_ch2];
+            }
+        }
+        my_tree->Fill();
+    }
+
+    //Calculate the FFs' std
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+
+            //By calculating the standard deviation
+            double average = 0.;double std = 0;
+            for(int i=0;i<nstep;i++){average = average + Fit_fraction_alter[i][idx_ch1][idx_ch2]/nstep;}
+            for(int i=0;i<nstep;i++){std = std + pow(Fit_fraction_alter[i][idx_ch1][idx_ch2]-average,2)/nstep;}
+            std = sqrt(std);
+
+            //By calculating the 68% area
+            double std1 = 0.; int area = 0;
+            while(area<(0.68*nstep) && (std1<2*std)){
+                std1 = std1 + 0.02*std;
+                area = 0;
+                for(int i=0;i<nstep;i++){if(fabs(Fit_fraction_alter[i][idx_ch1][idx_ch2]-average)<std1){area++;}}
+            }
+
+            Fit_fraction_std[idx_ch1][idx_ch2] = std1;//use the later one
+        }
+    }
+
+    //Save the obtained FFs and std of FFs
+    TMatrixD FF_val(max_nres,max_nres);
+    TMatrixD FF_err(max_nres,max_nres);
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            FF_val(idx_ch1,idx_ch2) = Fit_fraction[idx_ch1][idx_ch2];
+            FF_err(idx_ch1,idx_ch2) = Fit_fraction_std[idx_ch1][idx_ch2];
+        }
+    }
+    FF_val.Write("FF_val");
+    FF_err.Write("FF_err");
+
+    file->Write();
+    file->Close();
+
+    for(int i=0;i<nchain;i++){
+        for(int j=0;j<nchain;j++){
+            delete Fit_fraction_alter[i][j];
+        }
+        delete Fit_fraction_alter[i];
+    }
+    delete Fit_fraction_alter;
+    delete par_float;
+    
+
+}
+
+void Minimize::Print_FitFraction(int my_idx_nll, TString save_file){
+    std::cout<<"The Fit Fraction of the sample: "<<my_idx_nll<<endl;
+    NLL_estimator* mynll = NLL_estimator_array[my_idx_nll];
+
+    int nchain = mynll->amp_obj->nchain;
+    double** Fit_fraction = new double*[nchain];
+    for(int i=0;i<nchain;i++){Fit_fraction[i] = new double[nchain];}
+    double** Fit_fraction_err = new double*[nchain];
+    for(int i=0;i<nchain;i++){Fit_fraction_err[i] = new double[nchain];}
+
+    Cal_FitFraction(my_idx_nll,Fit_fraction,Fit_fraction_err,save_file);
+
+    for(int i=0;i<nchain;i++){
+        for(int j=0;j<nchain;j++){
+            if(i<j) continue;
+            std::cout<<mynll->amp_obj->array_chain[i].intermediate.name<<" & "<<mynll->amp_obj->array_chain[j].intermediate.name<<" : ";
+            std::cout<<std::fixed<<std::setprecision(4)<<Fit_fraction[i][j]<<" "<<Fit_fraction_err[i][j]<<endl;
+        }
+    }
+
+    for(int i=0;i<nchain;i++){delete Fit_fraction[i];}
+    delete Fit_fraction;
+    for(int i=0;i<nchain;i++){delete Fit_fraction_err[i];}
+    delete Fit_fraction_err;
 }

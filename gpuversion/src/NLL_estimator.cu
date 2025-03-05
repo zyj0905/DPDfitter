@@ -19,6 +19,7 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
     if(file_type==1){ evt_bg = Ntot; array_evt_bg = new Event[Ntot];}
     if(file_type==2){ evt_mc = Ntot; array_evt_mc = new Event[Ntot];}
 
+
     TLorentzVector T4_1,T4_2,T4_3,T4_sec_1,T4_sec_2;
     double p4_1[4],p4_2[4],p4_3[4];
     chain->SetBranchAddress(p4_1_name,&p4_1);
@@ -60,10 +61,11 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         double alpha = (-T4_1).Phi();
         double beta = (-T4_1).Theta();
         
-        TVector3 plane23 = T4_3.Vect().Cross(T4_2.Vect());
-        TVector3 Z_axis(0,0,1);
-        TVector3 plane1Z = Z_axis.Cross(T4_1.Vect());
-        double gamma = ((plane1Z.Cross(plane23)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * (plane1Z).Angle(plane23);
+        T4_1.RotateZ(-alpha); T4_2.RotateZ(-alpha); T4_3.RotateZ(-alpha);
+        T4_1.RotateY(-beta); T4_2.RotateY(-beta); T4_3.RotateY(-beta);
+        boostVector = -(T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+        double gamma = T4_2.Phi();
 
         //Create Event
         Event evt;
@@ -360,8 +362,25 @@ double NLL_estimator::Cal_log_likelihood(){
 
 }
 
-void NLL_estimator::save_root(int file_type, TString file_name){
-    TFile* file = new TFile(file_name, "recreate");
+void NLL_estimator::save_root(int file_type, TString file_name_out, TString file_name_in, TString chain_name, TString p4_1_name, TString p4_2_name, TString p4_3_name){
+
+    //Load the input files
+    TChain *chain = new TChain(chain_name);
+    chain->Add(file_name_in);
+
+    TLorentzVector T4_1,T4_2,T4_3,T4_sec_1,T4_sec_2;
+    double p4_1[4],p4_2[4],p4_3[4];
+    chain->SetBranchAddress(p4_1_name,&p4_1);
+    chain->SetBranchAddress(p4_2_name,&p4_2);
+    chain->SetBranchAddress(p4_3_name,&p4_3);
+    double p4_sec1[4], p4_sec2[4];
+    if(with_sec==true){
+        chain->SetBranchAddress(p4_dau1_name_sec,&p4_sec1);
+        chain->SetBranchAddress(p4_dau2_name_sec,&p4_sec2);
+    }
+
+    //New the output files
+    TFile* file = new TFile(file_name_out, "recreate");
     TTree* my_tree;
     if(file_type==0){my_tree = new TTree("Data","Data");}
     if(file_type==1){my_tree = new TTree("BKG","BKG");}
@@ -387,30 +406,48 @@ void NLL_estimator::save_root(int file_type, TString file_name){
                 CalPDFComponent(idx_ch1,idx_ch2,PDF_MC_component[idx_ch1][idx_ch2]);
             }
         }
+
+        for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+            for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+                double sum = 0.0;
+                for(int i=0;i<evt_mc;i++){
+                    sum = sum + PDF_MC_component[idx_ch1][idx_ch2][i];
+                }
+            }
+        }
     }
+
+    
     
 
-    double m_alpha; double m_beta; double m_gamma;
-    double m_sigma1; double m_sigma2; double m_sigma3;
-    double m_scatter_angle1; double m_scatter_angle2; double m_scatter_angle3;
-    double m_align_angle1; double m_align_angle2; double m_align_angle3;
+    double m_M23; double m_M13; double m_M12;
+    //For decay chain 0->1(23)
+    double m_cos_1; double m_cos_23; double m_phi_23;
+    //For decay chain 0->2(13)
+    double m_cos_2; double m_cos_13; double m_phi_13;
+    //For decay chain 0->3(12)
+    double m_cos_3; double m_cos_12; double m_phi_12;
     double m_second_theta; double m_second_phi;
+
     double m_weight_tot;
     const int max_nres = 20;
     double m_weight_component[max_nres][max_nres];
 
-    my_tree->Branch("alpha",&m_alpha,"m_alpha/D");
-    my_tree->Branch("beta",&m_beta,"m_beta/D");
-    my_tree->Branch("gamma",&m_gamma,"m_gamma/D");
-    my_tree->Branch("sigma1",&m_sigma1,"m_sigma1/D");
-    my_tree->Branch("sigma2",&m_sigma2,"m_sigma2/D");
-    my_tree->Branch("sigma3",&m_sigma3,"m_sigma3/D");
-    my_tree->Branch("scatter_angle1",&m_scatter_angle1,"m_scatter_angle1/D");
-    my_tree->Branch("scatter_angle2",&m_scatter_angle2,"m_scatter_angle2/D");
-    my_tree->Branch("scatter_angle3",&m_scatter_angle3,"m_scatter_angle3/D");
-    my_tree->Branch("align_angle1",&m_align_angle1,"m_align_angle1/D");
-    my_tree->Branch("align_angle2",&m_align_angle2,"m_align_angle2/D");
-    my_tree->Branch("align_angle3",&m_align_angle3,"m_align_angle3/D");
+    my_tree->Branch("p4_1",p4_1,"p4_1[4]/D");
+    my_tree->Branch("p4_2",p4_2,"p4_2[4]/D");
+    my_tree->Branch("p4_3",p4_3,"p4_3[4]/D");
+    my_tree->Branch("M23",&m_M23,"m_M23/D");
+    my_tree->Branch("M13",&m_M13,"m_M13/D");
+    my_tree->Branch("M12",&m_M12,"m_M12/D");
+    my_tree->Branch("cos1",&m_cos_1,"m_cos_1/D");
+    my_tree->Branch("cos2",&m_cos_2,"m_cos_2/D");
+    my_tree->Branch("cos3",&m_cos_3,"m_cos_3/D");
+    my_tree->Branch("cos23",&m_cos_23,"m_cos_23/D");
+    my_tree->Branch("cos13",&m_cos_13,"m_cos_13/D");
+    my_tree->Branch("cos12",&m_cos_12,"m_cos_12/D");
+    my_tree->Branch("phi23",&m_phi_23,"m_phi_23/D");
+    my_tree->Branch("phi13",&m_phi_13,"m_phi_13/D");
+    my_tree->Branch("phi12",&m_phi_12,"m_phi_12/D");
     my_tree->Branch("second_theta",&m_second_theta,"m_second_theta/D");
     my_tree->Branch("second_phi",&m_second_phi,"m_second_phi/D");
     if(file_type==2){
@@ -424,28 +461,62 @@ void NLL_estimator::save_root(int file_type, TString file_name){
     if(file_type==2){Ntot = evt_mc;arr_evt = array_evt_mc;}
 
     for (Int_t evt_loop=0; evt_loop<Ntot; evt_loop++)
-    {
-        m_alpha = arr_evt[evt_loop]._alpha;
-        m_beta = arr_evt[evt_loop]._beta;
-        m_gamma = arr_evt[evt_loop]._gamma;
-        m_sigma1 = arr_evt[evt_loop]._sigma1;
-        m_sigma2 = arr_evt[evt_loop]._sigma2;
-        m_sigma3 = arr_evt[evt_loop].sigma3_func_host();
-        m_scatter_angle1 = arr_evt[evt_loop].scatter_angle_func_host(1);
-        m_scatter_angle2 = arr_evt[evt_loop].scatter_angle_func_host(2);
-        m_scatter_angle3 = arr_evt[evt_loop].scatter_angle_func_host(3);
-        m_align_angle1 = arr_evt[evt_loop].alignment_angle_func_host(1);
-        m_align_angle2 = arr_evt[evt_loop].alignment_angle_func_host(2);
-        m_align_angle3 = arr_evt[evt_loop].alignment_angle_func_host(3);
+    {   
+        chain->GetEntry(evt_loop);
+        T4_1.SetPxPyPzE(p4_1[0],p4_1[1],p4_1[2],p4_1[3]);
+        T4_2.SetPxPyPzE(p4_2[0],p4_2[1],p4_2[2],p4_2[3]);
+        T4_3.SetPxPyPzE(p4_3[0],p4_3[1],p4_3[2],p4_3[3]);
+
+        TVector3 boostVector = -(T4_1+T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+
+        m_M23 = (T4_2+T4_3).M(); m_cos_1 = T4_1.CosTheta();
+        m_M13 = (T4_1+T4_3).M(); m_cos_2 = T4_2.CosTheta();
+        m_M12 = (T4_1+T4_2).M(); m_cos_3 = T4_3.CosTheta();
+
+        TVector3 Lab_zaxis(0.0,0.0,1.0);
+        TVector3 decay_plane_1 = Lab_zaxis.Cross(T4_1.Vect());
+        TVector3 decay_plane_2 = (T4_2.Vect()).Cross((T4_3.Vect()));
+        m_phi_23 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_2.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        decay_plane_1 = Lab_zaxis.Cross(T4_2.Vect());
+        decay_plane_2 = (T4_1.Vect()).Cross((T4_3.Vect()));
+        m_phi_13 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        decay_plane_1 = Lab_zaxis.Cross(T4_3.Vect());
+        decay_plane_2 = (T4_1.Vect()).Cross((T4_2.Vect()));
+        m_phi_12 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        boostVector = -(T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_23 = cos((-T4_1.Vect()).Angle(T4_2.Vect()));
+
+        boostVector = -(T4_1+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_13 = cos((-T4_2.Vect()).Angle(T4_1.Vect()));
+
+        boostVector = -(T4_1+T4_2).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_12 = cos((-T4_3.Vect()).Angle(T4_1.Vect()));
+
+        
         m_second_phi = arr_evt[evt_loop]._second_phi;
         m_second_theta = arr_evt[evt_loop]._second_theta;
+
         if(file_type==2){
             m_weight_tot = PDF_MC_tot[evt_loop]*norm_factor;
             int nchain = amp_obj->nchain;
             for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
                 for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
                     m_weight_component[idx_ch1][idx_ch2] = PDF_MC_component[idx_ch1][idx_ch2][evt_loop]*norm_factor;
-                    //printf("%d %d %d: %f\n",idx_ch1,idx_ch2,evt_loop,PDF_MC_component[idx_ch1][idx_ch2][evt_loop]);
                 }
             }
         }
@@ -465,4 +536,52 @@ void NLL_estimator::save_root(int file_type, TString file_name){
 
     file->Write();
     file->Close();
+}
+
+void NLL_estimator::GetFitFraction(double** Fit_Fraction){
+    
+    double *PDF_MC_tot;
+    PDF_MC_tot = new double[evt_mc];
+    CalPDF(array_device_evt_mc,evt_mc,PDF_MC_tot);
+    double sum_weight_tot = 0.0;
+    for(int i=0;i<evt_mc;i++){sum_weight_tot=sum_weight_tot+PDF_MC_tot[i];}
+
+
+    double ***PDF_MC_component;
+    int nchain = amp_obj->nchain;
+    //create the PDF matrix
+    PDF_MC_component = new double**[nchain];
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        PDF_MC_component[idx_ch1] = new double*[nchain];
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mc];
+            CalPDFComponent(idx_ch1,idx_ch2,PDF_MC_component[idx_ch1][idx_ch2]);
+        }
+    }
+
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            Fit_Fraction[idx_ch1][idx_ch2] = 0.0;
+            for(int i=0;i<evt_mc;i++){
+                Fit_Fraction[idx_ch1][idx_ch2] = Fit_Fraction[idx_ch1][idx_ch2] + PDF_MC_component[idx_ch1][idx_ch2][i];
+            }
+            Fit_Fraction[idx_ch1][idx_ch2] = Fit_Fraction[idx_ch1][idx_ch2]/sum_weight_tot;
+        }
+    }
+
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            if(idx_ch1==idx_ch2) continue;
+            Fit_Fraction[idx_ch1][idx_ch2] = Fit_Fraction[idx_ch1][idx_ch2] - Fit_Fraction[idx_ch1][idx_ch1] - Fit_Fraction[idx_ch2][idx_ch2];
+        }
+    }
+
+    delete PDF_MC_tot;
+    for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
+        for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            delete PDF_MC_component[idx_ch1][idx_ch2];
+        }
+        delete PDF_MC_component[idx_ch1];
+    }
+    
 }

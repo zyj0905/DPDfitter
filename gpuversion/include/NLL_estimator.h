@@ -81,6 +81,7 @@ class NLL_estimator: public TObject
         void Load_file(int file_type, TString file_name, TString chain_name, TString p4_1_name, TString p4_2_name, TString p4_3_name);
         void CalPDF(Event* evt_arr, int num_evt, double* amp2);
         void CalPDFComponent(int idx_ch1, int idx_ch2, double *PDF);
+        void GetFitFraction(double** Fit_Fraction);
         void Update_Paras();
         void Clear_LScoeff();
         double Cal_log_likelihood();
@@ -90,7 +91,7 @@ class NLL_estimator: public TObject
 
         Reson_par* Search_Reson_par(int m_idx_chain, int m_idx_dynamic_par, Reson_par* m_Respar_list);
         Reson_par* Search_Reson_par(int m_idx_chain, int m_idx_dynamic_par){return Search_Reson_par(m_idx_chain,m_idx_dynamic_par,Respar_list);};
-        void save_root(int file_type, TString file_name);
+        void save_root(int file_type, TString file_name_out, TString file_name_in, TString chain_name, TString p4_1_name, TString p4_2_name, TString p4_3_name);
         Para* Search_idx_minuit(int m_idx_minuit, bool& isfind);
         Para* Search_par_name(string m_name, bool& isfind);
         
@@ -104,6 +105,7 @@ class NLL_estimator: public TObject
         
         int evt_dt;
         int evt_mc;
+        int evt_mcT;
         int evt_bg;
 
         Event* array_evt_dt; Event* array_device_evt_dt;

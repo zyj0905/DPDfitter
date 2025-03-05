@@ -335,7 +335,7 @@ __device__ DeviceComplex DPD::Dalita_plot_function(double J, double s, double nu
                 for(double lamp_k = -spin_k; lamp_k<=spin_k; lamp_k++){
                     
                     //First decay
-                    double wigner_smallD1 = Wigner_smallD(J,nu,tau-lamp_k,-theta1_k);
+                    double wigner_smallD1 = Wigner_smallD(J,nu,tau-lamp_k,theta1_k);
                     if(wigner_smallD1==0){continue;}
                     DeviceComplex Helicity_coup1 = pow(-1,spin_k-lamp_k)*Helicity_HCcoupling(J,s,tau,spin_k,lamp_k,mom1_k,mychain,1);
                     //The Breit-Wigner term is excluded

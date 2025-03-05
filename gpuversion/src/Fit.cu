@@ -312,6 +312,7 @@ int main(int argc,char *argv[]){
     if(is_migrad){min0.Do_MIGRAD();}
     if(is_hesse){min0.Do_HESSE();}
     min0.UpdateMypar();
+    min0.SaveCovMatrix();
 
     for(int idx_sample=0;idx_sample<Nsample;idx_sample++){
         std::string inputString(argv[idx_sample+1]);
@@ -321,13 +322,36 @@ int main(int argc,char *argv[]){
         reader.parse(in, root);
         string par_out = root["para_list"]["listout"].asString();
         min0.SavePars(par_out,idx_sample);
+        
+        string outfile_name_dt = root["save_root"]["data"].asString();
+        string p4_final1_dt = root["data"]["p4_final"][0].asString();
+        string p4_final2_dt = root["data"]["p4_final"][1].asString();
+        string p4_final3_dt = root["data"]["p4_final"][2].asString();
+        string infile_name_dt = root["data"]["filename"].asString();
+        string chain_name_dt = root["data"]["chainname"].asString();
+        mynll[idx_sample]->save_root(0,outfile_name_dt,infile_name_dt,chain_name_dt,p4_final1_dt,p4_final2_dt,p4_final3_dt);
 
-        string outfile_dt = root["save_root"]["data"].asString();
-        mynll[idx_sample]->save_root(0,outfile_dt);
-        string outfile_bg = root["save_root"]["bg"].asString();
-        mynll[idx_sample]->save_root(1,outfile_bg);
-        string outfile_mc = root["save_root"]["mc"].asString();
-        mynll[idx_sample]->save_root(2,outfile_mc);
+        string outfile_name_bg = root["save_root"]["bg"].asString();
+        string p4_final1_bg = root["bg"]["p4_final"][0].asString();
+        string p4_final2_bg = root["bg"]["p4_final"][1].asString();
+        string p4_final3_bg = root["bg"]["p4_final"][2].asString();
+        string infile_name_bg = root["bg"]["filename"].asString();
+        string chain_name_bg = root["bg"]["chainname"].asString();
+        mynll[idx_sample]->save_root(1,outfile_name_bg,infile_name_bg,chain_name_bg,p4_final1_bg,p4_final2_bg,p4_final3_bg);
+
+        string outfile_name_mc = root["save_root"]["mc"].asString();
+        string p4_final1_mc = root["mc"]["p4_final"][0].asString();
+        string p4_final2_mc = root["mc"]["p4_final"][1].asString();
+        string p4_final3_mc = root["mc"]["p4_final"][2].asString();
+        string infile_name_mc = root["mc"]["filename"].asString();
+        string chain_name_mc = root["mc"]["chainname"].asString();
+        mynll[idx_sample]->save_root(2,outfile_name_mc,infile_name_mc,chain_name_mc,p4_final1_mc,p4_final2_mc,p4_final3_mc);
+
+        if(root.isMember("Cal_FitFraction")==true){
+            min0.Print_FitFraction(idx_sample,root["Cal_FitFraction"].asString());
+        }
+        
+        min0.UpdateMypar();
     }
 
     auto end = std::chrono::high_resolution_clock::now();

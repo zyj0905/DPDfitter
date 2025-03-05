@@ -254,10 +254,23 @@ int main(int argc,char *argv[]){
         Json::Reader reader;
 	    Json::Value root;
         reader.parse(in, root);
+
         string outfile_mc = root["save_root"]["mc"].asString();
+        string infile_name_mc = root["mc"]["filename"].asString();
+        string chain_name_mc = root["mc"]["chainname"].asString();
+        string p4_final1_mc = root["mc"]["p4_final"][0].asString();
+        string p4_final2_mc = root["mc"]["p4_final"][1].asString();
+        string p4_final3_mc = root["mc"]["p4_final"][2].asString();
+        mynll[idx_sample]->save_root(2,outfile_mc,atoi(argv[1]),infile_name_mc,chain_name_mc,p4_final1_mc,p4_final2_mc,p4_final3_mc);
+
+
         string outfile_mcT = root["save_root"]["Truth"].asString();
-        mynll[idx_sample]->save_root(2,outfile_mc,atoi(argv[1]));
-        mynll[idx_sample]->save_root(3,outfile_mcT,atoi(argv[1]));
+        string infile_name_mcT = root["Truth"]["filename"].asString();
+        string chain_name_mcT = root["Truth"]["chainname"].asString();
+        string p4_final1_mcT = root["Truth"]["p4_final"][0].asString();
+        string p4_final2_mcT = root["Truth"]["p4_final"][1].asString();
+        string p4_final3_mcT = root["Truth"]["p4_final"][2].asString();
+        mynll[idx_sample]->save_root(3,outfile_mcT,atoi(argv[1]),infile_name_mcT,chain_name_mcT,p4_final1_mcT,p4_final2_mcT,p4_final3_mcT);
     }
 
     auto end = std::chrono::high_resolution_clock::now();

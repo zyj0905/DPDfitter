@@ -60,6 +60,8 @@ class Para{
         else{return fix_ratio*fixed_to_this->Get_Val();}
     }
 
+    void Save_Fix(){if(is_fixed_to==true){Val = Get_Val();}}
+
 };
 
 

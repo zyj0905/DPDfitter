@@ -52,11 +52,12 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
 
         double alpha = (-T4_1).Phi();
         double beta = (-T4_1).Theta();
-        
-        TVector3 plane23 = T4_3.Vect().Cross(T4_2.Vect());
-        TVector3 Z_axis(0,0,1);
-        TVector3 plane1Z = Z_axis.Cross(T4_1.Vect());
-        double gamma = ((plane1Z.Cross(plane23)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * (plane1Z).Angle(plane23);
+
+        T4_1.RotateZ(-alpha); T4_2.RotateZ(-alpha); T4_3.RotateZ(-alpha);
+        T4_1.RotateY(-beta); T4_2.RotateY(-beta); T4_3.RotateY(-beta);
+        boostVector = -(T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+        double gamma = T4_2.Phi();
 
         //Create Event
         Event evt;
@@ -253,8 +254,90 @@ void NLL_estimator::CalPDF(Event* evt_arr, int num_evt, double* amp2){
     }
 }
 
-void NLL_estimator::save_root(int file_type, TString file_name, int save_component){
-    TFile* file = new TFile(file_name, "recreate");
+void NLL_estimator::CalPDFComponent(int idx_ch1, int idx_ch2, Event* evt_arr, int num_evt, double *PDF){
+
+    int n_Cpar1 = amp_obj->Get_total_LS1coeff_par();
+    int n_Cpar2 = amp_obj->Get_total_LS2coeff_par();
+    int n_Rpar = amp_obj->Get_total_dynamic_par();
+
+    LSCoeff_par* LS1Coeffpar_list_backup = new LSCoeff_par[n_Cpar1];
+    LSCoeff_par* LS2Coeffpar_list_backup = new LSCoeff_par[n_Cpar2];
+    Reson_par* Respar_list_backup = new Reson_par[n_Rpar];
+
+    for(int i=0;i<n_Cpar1;i++){
+        LS1Coeffpar_list[i].par_phi.Save_Fix();
+        LS1Coeffpar_list[i].par_rho.Save_Fix();
+        LS1Coeffpar_list_backup[i] = LS1Coeffpar_list[i];
+    }
+    for(int i=0;i<n_Cpar2;i++){
+        LS2Coeffpar_list[i].par_phi.Save_Fix();
+        LS2Coeffpar_list[i].par_rho.Save_Fix();
+        LS2Coeffpar_list_backup[i] = LS2Coeffpar_list[i];
+    }
+    for(int i=0;i<n_Rpar;i++){
+        Respar_list[i].par.Save_Fix();
+        Respar_list_backup[i] = Respar_list[i];
+    }
+    
+    Clear_LScoeff();
+
+    //Decay chain 1
+    int nLS1_ch1 = amp_obj->array_chain[idx_ch1].N1_LS;
+    int nLS2_ch1 = amp_obj->array_chain[idx_ch1].N2_LS;
+    for(int idx_ch1_ls=0;idx_ch1_ls<nLS1_ch1;idx_ch1_ls++){
+        Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list_backup)->par_rho.Val;
+        Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list_backup)->par_phi.Val;
+    }
+    for(int idx_ch1_ls=0;idx_ch1_ls<nLS2_ch1;idx_ch1_ls++){
+        Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list_backup)->par_rho.Val;
+        Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list_backup)->par_phi.Val;
+    }
+
+    //Decay chain 2
+    int nLS1_ch2 = amp_obj->array_chain[idx_ch2].N1_LS;
+    int nLS2_ch2 = amp_obj->array_chain[idx_ch2].N2_LS;
+    for(int idx_ch2_ls=0;idx_ch2_ls<nLS1_ch2;idx_ch2_ls++){
+        Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list_backup)->par_rho.Val;
+        Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list_backup)->par_phi.Val;
+    }
+    for(int idx_ch2_ls=0;idx_ch2_ls<nLS2_ch2;idx_ch2_ls++){
+        Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list_backup)->par_rho.Val;
+        Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list_backup)->par_phi.Val;
+    }
+    
+    Update_Paras();
+    CalPDF(evt_arr,num_evt,PDF);
+
+    //Recover the paralist
+    for(int i=0;i<n_Cpar1;i++){LS1Coeffpar_list[i] = LS1Coeffpar_list_backup[i];}
+    for(int i=0;i<n_Cpar2;i++){LS2Coeffpar_list[i] = LS2Coeffpar_list_backup[i];}
+    for(int i=0;i<n_Rpar;i++){Respar_list[i] = Respar_list_backup[i];}
+    Update_Paras();
+
+    delete[] LS1Coeffpar_list_backup;
+    delete[] LS2Coeffpar_list_backup;
+    delete[] Respar_list_backup;
+}
+
+void NLL_estimator::save_root(int file_type, TString file_name_out, int save_component, TString file_name_in, TString chain_name, TString p4_1_name, TString p4_2_name, TString p4_3_name){
+    
+    //Load the input files
+    TChain *chain = new TChain(chain_name);
+    chain->Add(file_name_in);
+
+    TLorentzVector T4_1,T4_2,T4_3,T4_sec_1,T4_sec_2;
+    double p4_1[4],p4_2[4],p4_3[4];
+    chain->SetBranchAddress(p4_1_name,&p4_1);
+    chain->SetBranchAddress(p4_2_name,&p4_2);
+    chain->SetBranchAddress(p4_3_name,&p4_3);
+    double p4_sec1[4], p4_sec2[4];
+    if(with_sec==true){
+        chain->SetBranchAddress(p4_dau1_name_sec,&p4_sec1);
+        chain->SetBranchAddress(p4_dau2_name_sec,&p4_sec2);
+    }
+    
+    //New the output files
+    TFile* file = new TFile(file_name_out, "recreate");
     TTree* my_tree;
     if(file_type==2){my_tree = new TTree("MC","MC");}
     if(file_type==3){my_tree = new TTree("MCT","MCT");}
@@ -275,83 +358,48 @@ void NLL_estimator::save_root(int file_type, TString file_name, int save_compone
         for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
             PDF_MC_component[idx_ch1] = new double*[nchain];
             for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
-                if(file_type==2){PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mc];}
-                if(file_type==3){PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mcT];}
+                std::cout<<"NOW is save component: "<<idx_ch1<<" "<<idx_ch2<<endl;
+                if(file_type==2){
+                    PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mc];
+                    CalPDFComponent(idx_ch1,idx_ch2,array_evt_mc,evt_mc,PDF_MC_component[idx_ch1][idx_ch2]);
+                }
+                if(file_type==3){
+                    PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mcT];
+                    CalPDFComponent(idx_ch1,idx_ch2,array_evt_mcT,evt_mcT,PDF_MC_component[idx_ch1][idx_ch2]);
+                }
             }
         }
-
-        int n_Cpar1 = amp_obj->Get_total_LS1coeff_par();
-        int n_Cpar2 = amp_obj->Get_total_LS2coeff_par();
-        int n_Rpar = amp_obj->Get_total_dynamic_par();
-        LSCoeff_par* LS1Coeffpar_list_backup = new LSCoeff_par[n_Cpar1];
-        LSCoeff_par* LS2Coeffpar_list_backup = new LSCoeff_par[n_Cpar2];
-        Reson_par* Respar_list_backup = new Reson_par[n_Rpar];
-        for(int i=0;i<n_Cpar1;i++){LS1Coeffpar_list_backup[i] = LS1Coeffpar_list[i];}
-        for(int i=0;i<n_Cpar2;i++){LS2Coeffpar_list_backup[i] = LS2Coeffpar_list[i];}
-        for(int i=0;i<n_Rpar;i++){Respar_list_backup[i] = Respar_list[i];}
-
-        for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
-            for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
-                Clear_LScoeff();
-
-                //Decay chain 1
-                int nLS1_ch1 = amp_obj->array_chain[idx_ch1].N1_LS;
-                int nLS2_ch1 = amp_obj->array_chain[idx_ch1].N2_LS;
-                for(int idx_ch1_ls=0;idx_ch1_ls<nLS1_ch1;idx_ch1_ls++){
-                    Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list_backup)->par_rho.Val;
-                    Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(1,idx_ch1,idx_ch1_ls,LS1Coeffpar_list_backup)->par_phi.Val;
-                }
-                for(int idx_ch1_ls=0;idx_ch1_ls<nLS2_ch1;idx_ch1_ls++){
-                    Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list_backup)->par_rho.Val;
-                    Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(2,idx_ch1,idx_ch1_ls,LS2Coeffpar_list_backup)->par_phi.Val;
-                }
-
-                //Decay chain 2
-                int nLS1_ch2 = amp_obj->array_chain[idx_ch2].N1_LS;
-                int nLS2_ch2 = amp_obj->array_chain[idx_ch2].N2_LS;
-                for(int idx_ch2_ls=0;idx_ch2_ls<nLS1_ch2;idx_ch2_ls++){
-                    Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list_backup)->par_rho.Val;
-                    Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(1,idx_ch2,idx_ch2_ls,LS1Coeffpar_list_backup)->par_phi.Val;
-                }
-                for(int idx_ch2_ls=0;idx_ch2_ls<nLS2_ch2;idx_ch2_ls++){
-                    Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list)->par_rho.Val = Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list_backup)->par_rho.Val;
-                    Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list)->par_phi.Val = Search_LSCoeff_par(2,idx_ch2,idx_ch2_ls,LS2Coeffpar_list_backup)->par_phi.Val;
-                }
-                
-                Update_Paras();
-                if(file_type==2){CalPDF(array_evt_mc,evt_mc,PDF_MC_component[idx_ch1][idx_ch2]);}
-                if(file_type==3){CalPDF(array_evt_mcT,evt_mcT,PDF_MC_component[idx_ch1][idx_ch2]);}
-           }
-        }
-
-        for(int i=0;i<n_Cpar1;i++){LS1Coeffpar_list[i] = LS1Coeffpar_list_backup[i];}
-        for(int i=0;i<n_Cpar2;i++){LS2Coeffpar_list[i] = LS2Coeffpar_list_backup[i];}
-        for(int i=0;i<n_Rpar;i++){Respar_list[i] = Respar_list_backup[i];}
-        Update_Paras();
     }
-    
 
-    double m_alpha; double m_beta; double m_gamma;
-    double m_sigma1; double m_sigma2; double m_sigma3;
-    double m_scatter_angle1; double m_scatter_angle2; double m_scatter_angle3;
-    double m_align_angle1; double m_align_angle2; double m_align_angle3;
+    double m_M23; double m_M13; double m_M12;
+    //For decay chain 0->1(23)
+    double m_cos_1; double m_cos_23; double m_phi_23;
+    //For decay chain 0->2(13)
+    double m_cos_2; double m_cos_13; double m_phi_13;
+    //For decay chain 0->3(12)
+    double m_cos_3; double m_cos_12; double m_phi_12;
     double m_second_theta; double m_second_phi;
+
     double m_weight_tot;
     const int max_nres = 20;
     double m_weight_component[max_nres][max_nres];
 
-    my_tree->Branch("alpha",&m_alpha,"m_alpha/D");
-    my_tree->Branch("beta",&m_beta,"m_beta/D");
-    my_tree->Branch("gamma",&m_gamma,"m_gamma/D");
-    my_tree->Branch("sigma1",&m_sigma1,"m_sigma1/D");
-    my_tree->Branch("sigma2",&m_sigma2,"m_sigma2/D");
-    my_tree->Branch("sigma3",&m_sigma3,"m_sigma3/D");
-    my_tree->Branch("scatter_angle1",&m_scatter_angle1,"m_scatter_angle1/D");
-    my_tree->Branch("scatter_angle2",&m_scatter_angle2,"m_scatter_angle2/D");
-    my_tree->Branch("scatter_angle3",&m_scatter_angle3,"m_scatter_angle3/D");
-    my_tree->Branch("align_angle1",&m_align_angle1,"m_align_angle1/D");
-    my_tree->Branch("align_angle2",&m_align_angle2,"m_align_angle2/D");
-    my_tree->Branch("align_angle3",&m_align_angle3,"m_align_angle3/D");
+
+    my_tree->Branch("p4_1",p4_1,"p4_1[4]/D");
+    my_tree->Branch("p4_2",p4_2,"p4_2[4]/D");
+    my_tree->Branch("p4_3",p4_3,"p4_3[4]/D");
+    my_tree->Branch("M23",&m_M23,"m_M23/D");
+    my_tree->Branch("M13",&m_M13,"m_M13/D");
+    my_tree->Branch("M12",&m_M12,"m_M12/D");
+    my_tree->Branch("cos1",&m_cos_1,"m_cos_1/D");
+    my_tree->Branch("cos2",&m_cos_2,"m_cos_2/D");
+    my_tree->Branch("cos3",&m_cos_3,"m_cos_3/D");
+    my_tree->Branch("cos23",&m_cos_23,"m_cos_23/D");
+    my_tree->Branch("cos13",&m_cos_13,"m_cos_13/D");
+    my_tree->Branch("cos12",&m_cos_12,"m_cos_12/D");
+    my_tree->Branch("phi23",&m_phi_23,"m_phi_23/D");
+    my_tree->Branch("phi13",&m_phi_13,"m_phi_13/D");
+    my_tree->Branch("phi12",&m_phi_12,"m_phi_12/D");
     my_tree->Branch("second_theta",&m_second_theta,"m_second_theta/D");
     my_tree->Branch("second_phi",&m_second_phi,"m_second_phi/D");
     if(file_type==2||file_type==3){
@@ -365,20 +413,56 @@ void NLL_estimator::save_root(int file_type, TString file_name, int save_compone
 
     for (Int_t evt_loop=0; evt_loop<Ntot; evt_loop++)
     {
-        m_alpha = arr_evt[evt_loop]._alpha;
-        m_beta = arr_evt[evt_loop]._beta;
-        m_gamma = arr_evt[evt_loop]._gamma;
-        m_sigma1 = arr_evt[evt_loop]._sigma1;
-        m_sigma2 = arr_evt[evt_loop]._sigma2;
-        m_sigma3 = arr_evt[evt_loop].sigma3_func();
-        m_scatter_angle1 = arr_evt[evt_loop].scatter_angle_func(1);
-        m_scatter_angle2 = arr_evt[evt_loop].scatter_angle_func(2);
-        m_scatter_angle3 = arr_evt[evt_loop].scatter_angle_func(3);
-        m_align_angle1 = arr_evt[evt_loop].alignment_angle_func(1);
-        m_align_angle2 = arr_evt[evt_loop].alignment_angle_func(2);
-        m_align_angle3 = arr_evt[evt_loop].alignment_angle_func(3);
+        chain->GetEntry(evt_loop);
+        T4_1.SetPxPyPzE(p4_1[0],p4_1[1],p4_1[2],p4_1[3]);
+        T4_2.SetPxPyPzE(p4_2[0],p4_2[1],p4_2[2],p4_2[3]);
+        T4_3.SetPxPyPzE(p4_3[0],p4_3[1],p4_3[2],p4_3[3]);
+
+        TVector3 boostVector = -(T4_1+T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+
+        m_M23 = (T4_2+T4_3).M(); m_cos_1 = T4_1.CosTheta();
+        m_M13 = (T4_1+T4_3).M(); m_cos_2 = T4_2.CosTheta();
+        m_M12 = (T4_1+T4_2).M(); m_cos_3 = T4_3.CosTheta();
+
+        TVector3 Lab_zaxis(0.0,0.0,1.0);
+        TVector3 decay_plane_1 = Lab_zaxis.Cross(T4_1.Vect());
+        TVector3 decay_plane_2 = (T4_2.Vect()).Cross((T4_3.Vect()));
+        m_phi_23 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_2.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        decay_plane_1 = Lab_zaxis.Cross(T4_2.Vect());
+        decay_plane_2 = (T4_1.Vect()).Cross((T4_3.Vect()));
+        m_phi_13 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        decay_plane_1 = Lab_zaxis.Cross(T4_3.Vect());
+        decay_plane_2 = (T4_1.Vect()).Cross((T4_2.Vect()));
+        m_phi_12 = ((decay_plane_1.Cross(decay_plane_2)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_1.Angle(decay_plane_2);
+
+        boostVector = -(T4_2+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_23 = cos((-T4_1.Vect()).Angle(T4_2.Vect()));
+
+        boostVector = -(T4_1+T4_3).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_13 = cos((-T4_2.Vect()).Angle(T4_1.Vect()));
+
+        boostVector = -(T4_1+T4_2).BoostVector();
+        T4_1.Boost(boostVector);
+        T4_2.Boost(boostVector);
+        T4_3.Boost(boostVector);
+        m_cos_12 = cos((-T4_3.Vect()).Angle(T4_1.Vect()));
+
+        
         m_second_phi = arr_evt[evt_loop]._second_phi;
         m_second_theta = arr_evt[evt_loop]._second_theta;
+
+
         if(file_type==2||file_type==3){
             m_weight_tot = PDF_MC_tot[evt_loop]*norm_factor;
             int nchain = amp_obj->nchain;
@@ -390,6 +474,7 @@ void NLL_estimator::save_root(int file_type, TString file_name, int save_compone
                 }
             }
         }
+
         my_tree->Fill();
     }
 
