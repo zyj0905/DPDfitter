@@ -31,7 +31,7 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         T4_1.SetPxPyPzE(p4_1[0],p4_1[1],p4_1[2],p4_1[3]);
         T4_2.SetPxPyPzE(p4_2[0],p4_2[1],p4_2[2],p4_2[3]);
         T4_3.SetPxPyPzE(p4_3[0],p4_3[1],p4_3[2],p4_3[3]);
-        if(with_sec==true){
+        if(with_sec){
             T4_sec_1.SetPxPyPzE(p4_sec1[0],p4_sec1[1],p4_sec1[2],p4_sec1[3]);
             T4_sec_2.SetPxPyPzE(p4_sec2[0],p4_sec2[1],p4_sec2[2],p4_sec2[3]);
         }
@@ -48,15 +48,20 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         T4_1.Boost(boostVector);
         T4_2.Boost(boostVector);
         T4_3.Boost(boostVector);
-        if(with_sec==true){T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);}
+        if(with_sec){
+            T4_sec_1.Boost(boostVector);
+            T4_sec_2.Boost(boostVector);
+        }
 
         double alpha = (-T4_1).Phi();
         double beta = (-T4_1).Theta();
 
         T4_1.RotateZ(-alpha); T4_2.RotateZ(-alpha); T4_3.RotateZ(-alpha);
         T4_1.RotateY(-beta); T4_2.RotateY(-beta); T4_3.RotateY(-beta);
-        boostVector = -(T4_2+T4_3).BoostVector();
-        T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+        if(with_sec){
+            T4_sec_1.RotateZ(-alpha); T4_sec_2.RotateZ(-alpha);
+            T4_sec_1.RotateY(-beta); T4_sec_2.RotateY(-beta);
+        }
         double gamma = T4_2.Phi();
 
         //Create Event
@@ -64,27 +69,59 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         evt._alpha = alpha; evt._beta = beta; evt._gamma = gamma;
         evt._sigma1 = sigma1; evt._sigma2 = sigma2;
         evt._mass2_mom0 = mass2_mom0; evt._mass2_dau1 = mass2_dau1; evt._mass2_dau2 = mass2_dau2; evt._mass2_dau3 = mass2_dau3; 
+        double phi_sec = 0.0; double theta_sec = 0.0;
 
-        //secondary decay
-        if(with_sec==true){
-            double theta_sec(0),phi_sec(0);
-            int idx_sec = amp_obj->idx_sec;          
+        if(with_sec){
+            //perform the final rotation
+            T4_1.RotateZ(-gamma); T4_2.RotateZ(-gamma); T4_3.RotateZ(-gamma);
+            T4_sec_1.RotateZ(-gamma); T4_sec_2.RotateZ(-gamma);
+            int idx_sec = amp_obj->idx_sec;
+            
+            if(idx_sec==1){
+                //require a (-1)^{J-Lambda} factor
+                T4_1.RotateY(-3.1415926); T4_2.RotateY(-3.1415926); T4_3.RotateY(-3.1415926);
+                T4_sec_1.RotateY(-3.1415926); T4_sec_2.RotateY(-3.1415926);
 
-            TVector3 decay_plane_sec = (T4_sec_2.Vect()).Cross(T4_sec_1.Vect());
-            TVector3 decay_plane_mom = (T4_1.Vect()).Cross(T4_2.Vect());
-            phi_sec = ((decay_plane_sec.Cross(decay_plane_mom)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_sec.Angle(decay_plane_mom);
+                boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                phi_sec = T4_sec_1.Phi();
+                theta_sec = T4_sec_1.Theta();
+            }
+            else{
+                boostVector = -(T4_2+T4_3).BoostVector();
+                T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
 
-            TVector3 boostVector1(0,0,0);
-            if(idx_sec==1) boostVector1 = -T4_1.BoostVector();
-            if(idx_sec==2) boostVector1 = -T4_2.BoostVector();
-            if(idx_sec==3) boostVector1 = -T4_3.BoostVector();
-            TLorentzVector T4_123 = T4_1 + T4_2 + T4_3;  
-            T4_123.Boost(boostVector1);
-            T4_sec_1.Boost(boostVector1);
-            theta_sec = (-T4_123.Vect()).Angle(T4_sec_1.Vect());
-            evt._second_theta = theta_sec;
-            evt._second_phi = phi_sec;
+                double theta_23 = T4_2.Theta();
+                double phi_23 = T4_2.Phi();//should be zero, as p2 in the X-Z plane
+                T4_1.RotateY(-theta_23); T4_2.RotateY(-theta_23); T4_3.RotateY(-theta_23);
+                T4_sec_1.RotateY(-theta_23); T4_sec_2.RotateY(-theta_23);
+
+                if(idx_sec==2){
+                    boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                    T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                    T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                    phi_sec = T4_sec_1.Phi();
+                    theta_sec = T4_sec_1.Theta();
+                }
+                if(idx_sec==3){
+                    //require a (-1)^{J-Lambda} factor
+                    T4_1.RotateY(-3.1415926); T4_2.RotateY(-3.1415926); T4_3.RotateY(-3.1415926);
+                    T4_sec_1.RotateY(-3.1415926); T4_sec_2.RotateY(-3.1415926);
+                    
+                    boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                    T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                    T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                    phi_sec = T4_sec_1.Phi();
+                    theta_sec = T4_sec_1.Theta();
+                }
+            }
+            
         }
+
+        evt._second_phi = phi_sec;
+        evt._second_theta = theta_sec;
 
         if(file_type==0){ array_evt_dt[counter] = evt;}
         if(file_type==1){ array_evt_bg[counter] = evt;}
@@ -379,6 +416,8 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
     //For decay chain 0->3(12)
     double m_cos_3; double m_cos_12; double m_phi_12;
     double m_second_theta; double m_second_phi;
+    //gamma for dbg
+    double m_gamma;
 
     double m_weight_tot;
     const int max_nres = 20;
@@ -406,6 +445,7 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
         my_tree->Branch("weight_tot",&m_weight_tot,"m_weight_tot/D");
         my_tree->Branch("weight_component", m_weight_component, Form("m_weight_component[%d][%d]/D",max_nres,max_nres));
     }
+    my_tree->Branch("gamma",&m_gamma,"m_gamma/D");
 
     int Ntot(0); Event* arr_evt;
     if(file_type==2){Ntot = evt_mc;arr_evt = array_evt_mc;}
@@ -461,7 +501,7 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
         
         m_second_phi = arr_evt[evt_loop]._second_phi;
         m_second_theta = arr_evt[evt_loop]._second_theta;
-
+        m_gamma = arr_evt[evt_loop]._gamma;
 
         if(file_type==2||file_type==3){
             m_weight_tot = PDF_MC_tot[evt_loop]*norm_factor;

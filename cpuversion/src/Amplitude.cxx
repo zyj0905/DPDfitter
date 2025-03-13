@@ -29,13 +29,27 @@ DeviceComplex Amplitude::SumOverNu(Event* evt, double Lamb, double lam[3]){
     return Nu_sum;
 }
 
-DeviceComplex Amplitude::Amp_Secondary_Decay(Event* evt, double Lamb, int type){
+DeviceComplex Amplitude::Amp_Secondary_Decay(Event* evt, double lam, int type){
     DPD DPD_obj;
     //Vpp vertex
     if(type==0){
-        return (DPD_obj.Wigner_bigD(1,Lamb,0,evt->_second_phi,evt->_second_theta,0)).rho2();
+        return (DPD_obj.Wigner_bigD(1,lam,0,evt->_second_phi,evt->_second_theta,0)).conjugate();
     }
     return 1;
+}
+
+DeviceComplex Amplitude::SumSecondary(Event* evt, double Lamb, double lam[3]){
+
+    if(idx_sec==-1){return SumOverNu(evt,Lamb,lam);}
+
+    DeviceComplex lam_sec_sum(0.0);
+    for(double lam_sec=-spin_dau[idx_sec-1];lam_sec<=spin_dau[idx_sec-1];lam_sec++){
+        lam[idx_sec-1] = lam_sec;
+        DeviceComplex sec_decay(1,0);
+        sec_decay = Amp_Secondary_Decay(evt,lam_sec,type_sec);
+        lam_sec_sum = lam_sec_sum + SumOverNu(evt,Lamb,lam)*sec_decay;
+    }
+    return lam_sec_sum;
 }
 
 DeviceComplex Amplitude::SumOverlam(Event* evt, double Lamb, double Lambp){
@@ -46,16 +60,17 @@ DeviceComplex Amplitude::SumOverlam(Event* evt, double Lamb, double Lambp){
         for(double lam2=-spin_dau[1];lam2<=spin_dau[1];lam2++){
             for(double lam3=-spin_dau[2];lam3<=spin_dau[2];lam3++){
                 lam[0] = lam1; lam[1] = lam2; lam[2] = lam3;
-                DeviceComplex sec_decay(1,0);
-                sec_decay = Amp_Secondary_Decay(evt,lam[idx_sec-1],type_sec);
-                if(Lambp==Lamb){lam_sum = lam_sum + (SumOverNu(evt,Lamb,lam).rho2())*sec_decay;}
-                else{lam_sum = lam_sum + SumOverNu(evt,Lamb,lam)*((SumOverNu(evt,Lambp,lam)).conjugate())*sec_decay;}
+                if(idx_sec==1 && lam1!=spin_dau[0]){continue;}
+                if(idx_sec==2 && lam2!=spin_dau[1]){continue;}
+                if(idx_sec==3 && lam3!=spin_dau[2]){continue;}
+
+                if(Lambp==Lamb){lam_sum = lam_sum + ((SumSecondary(evt,Lamb,lam)).rho2());}
+                else{lam_sum = lam_sum + (SumSecondary(evt,Lamb,lam))*((SumSecondary(evt,Lambp,lam)).conjugate());}
             }
         }
     }
     return lam_sum;
 }
-
 
 double Amplitude::SumOverLam(Event* evt){
     DeviceComplex Lam_sum(0.0);
@@ -65,7 +80,8 @@ double Amplitude::SumOverLam(Event* evt){
             int idx_Lamp = int(Lamp+spin_mom);
             int idx_matrix = int(idx_Lam*(2*spin_mom+1)+idx_Lamp);
             if(Spin_Density_Matrix[idx_matrix]==0){continue;}
-            Lam_sum = Lam_sum + SumOverlam(evt,Lam,Lamp)*Spin_Density_Matrix[idx_matrix];
+            DeviceComplex a = SumOverlam(evt,Lam,Lamp);
+            Lam_sum = Lam_sum + a*Spin_Density_Matrix[idx_matrix];
         }
     }
     if(Lam_sum.imag>1E-5){std::cout<<Lam_sum.imag<<endl;}

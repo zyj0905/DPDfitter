@@ -47,6 +47,7 @@ class Amplitude{
         DeviceComplex SumDecayChain(Event* evt, double nu, double lam[3]);
         DeviceComplex SumOverNu(Event* evt, double Lamb, double lam[3]);
         DeviceComplex SumOverlam(Event* evt, double Lamb, double Lambp);
+        DeviceComplex SumSecondary(Event* evt, double Lamb, double lam[3]);
         double SumOverLam(Event* evt);
 
 };
