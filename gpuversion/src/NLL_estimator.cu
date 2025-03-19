@@ -72,27 +72,75 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
         evt._alpha = alpha; evt._beta = beta; evt._gamma = gamma;
         evt._sigma1 = sigma1; evt._sigma2 = sigma2;
         evt._mass2_mom0 = mass2_mom0; evt._mass2_dau1 = mass2_dau1; evt._mass2_dau2 = mass2_dau2; evt._mass2_dau3 = mass2_dau3; 
+        double phi_sec = 0.0; double theta_sec = 0.0;
 
-        //secondary decay
-        if(with_sec==true){
-            double theta_sec(0),phi_sec(0);
-            int idx_sec = amp_obj->idx_sec;          
+        if(with_sec){
+            //perform the final rotation
+            T4_1.RotateZ(-gamma); T4_2.RotateZ(-gamma); T4_3.RotateZ(-gamma);
+            T4_sec_1.RotateZ(-gamma); T4_sec_2.RotateZ(-gamma);
+            int idx_sec = amp_obj->idx_sec;
 
-            TVector3 decay_plane_sec = (T4_sec_2.Vect()).Cross(T4_sec_1.Vect());
-            TVector3 decay_plane_mom = (T4_1.Vect()).Cross(T4_2.Vect());
-            phi_sec = ((decay_plane_sec.Cross(decay_plane_mom)).Dot(T4_1.Vect())>0? 1.0 : -1.0) * decay_plane_sec.Angle(decay_plane_mom);
+            //Case1: all angles calculated in decay chain 1
+            /*
+            if(idx_sec==1){
+                //require a (-1)^{J-Lambda} factor
+                T4_1.RotateY(-3.1415926); T4_2.RotateY(-3.1415926); T4_3.RotateY(-3.1415926);
+                T4_sec_1.RotateY(-3.1415926); T4_sec_2.RotateY(-3.1415926);
 
-            TVector3 boostVector1(0,0,0);
-            if(idx_sec==1) boostVector1 = -T4_1.BoostVector();
-            if(idx_sec==2) boostVector1 = -T4_2.BoostVector();
-            if(idx_sec==3) boostVector1 = -T4_3.BoostVector();
-            TLorentzVector T4_123 = T4_1 + T4_2 + T4_3;  
-            T4_123.Boost(boostVector1);
-            T4_sec_1.Boost(boostVector1);
-            theta_sec = (-T4_123.Vect()).Angle(T4_sec_1.Vect());
-            evt._second_theta = theta_sec;
-            evt._second_phi = phi_sec;
+                boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                phi_sec = T4_sec_1.Phi();
+                theta_sec = T4_sec_1.Theta();
+            }
+            else{
+                boostVector = -(T4_2+T4_3).BoostVector();
+                T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+
+                double theta_23 = T4_2.Theta();
+                double phi_23 = T4_2.Phi();//should be zero, as p2 in the X-Z plane
+                T4_1.RotateY(-theta_23); T4_2.RotateY(-theta_23); T4_3.RotateY(-theta_23);
+                T4_sec_1.RotateY(-theta_23); T4_sec_2.RotateY(-theta_23);
+
+                if(idx_sec==2){
+                    boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                    T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                    T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                    phi_sec = T4_sec_1.Phi();
+                    theta_sec = T4_sec_1.Theta();
+                }
+                if(idx_sec==3){
+                    //require a (-1)^{J-Lambda} factor
+                    T4_1.RotateY(-3.1415926); T4_2.RotateY(-3.1415926); T4_3.RotateY(-3.1415926);
+                    T4_sec_1.RotateY(-3.1415926); T4_sec_2.RotateY(-3.1415926);
+                    
+                    boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+                    T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+                    T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+                    phi_sec = T4_sec_1.Phi();
+                    theta_sec = T4_sec_1.Theta();
+                }
+            }
+            */
+
+            //Case2: all angles calculated corresponding Aligned CMs
+            double theta_to_Z = 0.0;
+            theta_to_Z = (T4_sec_1+T4_sec_2).Theta();
+            if(idx_sec==3) theta_to_Z = -1*theta_to_Z;
+            T4_1.RotateY(-theta_to_Z); T4_2.RotateY(-theta_to_Z); T4_3.RotateY(-theta_to_Z);
+            T4_sec_1.RotateY(-theta_to_Z); T4_sec_2.RotateY(-theta_to_Z);
+
+            boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+            T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+            T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+            phi_sec = T4_sec_1.Phi();
+            theta_sec = T4_sec_1.Theta();
+
         }
+
+        evt._second_phi = phi_sec;
+        evt._second_theta = theta_sec;
 
         if(file_type==0){ array_evt_dt[counter] = evt;}
         if(file_type==1){ array_evt_bg[counter] = evt;}

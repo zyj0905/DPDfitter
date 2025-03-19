@@ -80,8 +80,7 @@ double Amplitude::SumOverLam(Event* evt){
             int idx_Lamp = int(Lamp+spin_mom);
             int idx_matrix = int(idx_Lam*(2*spin_mom+1)+idx_Lamp);
             if(Spin_Density_Matrix[idx_matrix]==0){continue;}
-            DeviceComplex a = SumOverlam(evt,Lam,Lamp);
-            Lam_sum = Lam_sum + a*Spin_Density_Matrix[idx_matrix];
+            Lam_sum = Lam_sum + SumOverlam(evt,Lam,Lamp)*Spin_Density_Matrix[idx_matrix];
         }
     }
     if(Lam_sum.imag>1E-5){std::cout<<Lam_sum.imag<<endl;}

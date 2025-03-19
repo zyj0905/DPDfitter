@@ -76,7 +76,9 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
             T4_1.RotateZ(-gamma); T4_2.RotateZ(-gamma); T4_3.RotateZ(-gamma);
             T4_sec_1.RotateZ(-gamma); T4_sec_2.RotateZ(-gamma);
             int idx_sec = amp_obj->idx_sec;
-            
+
+            //Case1: all angles calculated in decay chain 1
+            /*
             if(idx_sec==1){
                 //require a (-1)^{J-Lambda} factor
                 T4_1.RotateY(-3.1415926); T4_2.RotateY(-3.1415926); T4_3.RotateY(-3.1415926);
@@ -117,7 +119,21 @@ void NLL_estimator::Load_file(int file_type, TString file_name, TString chain_na
                     theta_sec = T4_sec_1.Theta();
                 }
             }
-            
+            */
+
+            //Case2: all angles calculated corresponding Aligned CMs
+            double theta_to_Z = 0.0;
+            theta_to_Z = (T4_sec_1+T4_sec_2).Theta();
+            if(idx_sec==3) theta_to_Z = -1*theta_to_Z;
+            T4_1.RotateY(-theta_to_Z); T4_2.RotateY(-theta_to_Z); T4_3.RotateY(-theta_to_Z);
+            T4_sec_1.RotateY(-theta_to_Z); T4_sec_2.RotateY(-theta_to_Z);
+
+            boostVector = -(T4_sec_1+T4_sec_2).BoostVector();
+            T4_1.Boost(boostVector); T4_2.Boost(boostVector); T4_3.Boost(boostVector);
+            T4_sec_1.Boost(boostVector);T4_sec_2.Boost(boostVector);
+            phi_sec = T4_sec_1.Phi();
+            theta_sec = T4_sec_1.Theta();
+
         }
 
         evt._second_phi = phi_sec;

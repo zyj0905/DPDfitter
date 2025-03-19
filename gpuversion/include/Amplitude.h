@@ -43,9 +43,10 @@ class Amplitude{
             return sum;
         }
         
-        __device__ DeviceComplex Amp_Secondary_Decay(Event* evt, double Lamb, int type);
+        __device__ DeviceComplex Amp_Secondary_Decay(Event* evt, double lam, int type);
         __device__ DeviceComplex SumDecayChain(Event* evt, double nu, double lam[3]);
         __device__ DeviceComplex SumOverNu(Event* evt, double Lamb, double lam[3]);
+        __device__ DeviceComplex SumSecondary(Event* evt, double Lamb, double lam[3]);
         __device__ DeviceComplex SumOverlam(Event* evt, double Lamb, double Lambp);
         __device__ double SumOverLam(Event* evt);
 
