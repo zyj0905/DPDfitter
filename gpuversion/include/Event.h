@@ -15,6 +15,7 @@ class Event{
             _sigma1 = 0; _sigma2 = 0;
             _mass2_mom0 = 0; _mass2_dau1 = 0; _mass2_dau2 = 0; _mass2_dau3 = 0;
             _second_theta = 0; _second_phi = 0;
+            _bgweight = 1;
         }
         Event(){
             Init();
@@ -26,6 +27,7 @@ class Event{
             _alpha = other._alpha; _beta = other._beta; _gamma = other._gamma;
             _second_theta = other._second_theta; _second_phi = other._second_phi;
             _sigma1 = other._sigma1; _sigma2 = other._sigma2;
+            _bgweight = other._bgweight;
         }
         Event& operator=(const Event &other)
         {
@@ -37,6 +39,7 @@ class Event{
             _alpha = other._alpha; _beta = other._beta; _gamma = other._gamma;
             _second_theta = other._second_theta; _second_phi = other._second_phi;
             _sigma1 = other._sigma1; _sigma2 = other._sigma2;
+            _bgweight = other._bgweight;
             return *this;
         }
         
@@ -44,6 +47,7 @@ class Event{
         double _sigma1; double _sigma2;
         double _mass2_mom0; double _mass2_dau1; double _mass2_dau2; double _mass2_dau3;  
         double _second_theta; double _second_phi;
+        double _bgweight;
         __device__ double sigma3_func();
         __device__ double sqrt_lamb_func(double x, double y, double z);
         __device__ double alignment_angle_func(int idx);

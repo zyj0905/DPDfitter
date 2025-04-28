@@ -53,11 +53,18 @@ class NLL_estimator: public TObject
             array_device_evt_dt = nullptr; array_device_evt_bg = nullptr; array_device_evt_mc = nullptr;
             with_sec = false; p4_dau1_name_sec = "void"; p4_dau2_name_sec = "void";
             amp_obj_device = nullptr;
+
+            fit_type = 0; bg_ratio = 0.0;Normalization_factor_bg=0.0;
         }
         void set_sec_decay(TString p4_dau1_name, TString p4_dau2_name){
             with_sec = true;
             p4_dau1_name_sec = p4_dau1_name;
             p4_dau2_name_sec = p4_dau2_name;
+        }
+        void set_fit_type(int m_fit_type, TString m_PDF_bg_name, double m_bg_ratio){
+            fit_type = m_fit_type;
+            PDF_bg_name = m_PDF_bg_name;
+            bg_ratio = m_bg_ratio;
         }
         void Update_ampobj_device(){
             CUDA_CHECK_ERROR(cudaFree(amp_obj_device));
@@ -84,6 +91,8 @@ class NLL_estimator: public TObject
         void GetFitFraction(double** Fit_Fraction);
         void Update_Paras();
         void Clear_LScoeff();
+        double Cal_log_likelihood_nFit();
+        double Cal_log_likelihood_cFit();
         double Cal_log_likelihood();
         
         LSCoeff_par* Search_LSCoeff_par(int type_ls, int m_idx_chain, int m_idx_LS, LSCoeff_par* m_LSCoeffpar_list);
@@ -107,6 +116,11 @@ class NLL_estimator: public TObject
         int evt_mc;
         int evt_mcT;
         int evt_bg;
+
+        int fit_type;
+        TString PDF_bg_name;
+        double bg_ratio;
+        double Normalization_factor_bg;
 
         Event* array_evt_dt; Event* array_device_evt_dt;
         Event* array_evt_mc; Event* array_device_evt_mc;

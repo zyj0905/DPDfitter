@@ -2,7 +2,7 @@ import json
 import numpy as np
 
 
-with open('./par_in/Dst0DmPip_par.json', 'r', encoding='utf-8') as file:
+with open('./par_out/Dst0DmPip_par.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
 #The overall factor
@@ -23,6 +23,10 @@ for key in data.keys():
         data[key][0] = data[key][0] - overall_factor_phi_LS1
     if("_rho" in key):
         data[key][0] = data[key][0]/overall_factor_rho_LS1
+    #rescale the errors
+    if(data[key][1]!=0):
+        data[key][1] = 1.0
+
 
 overall_factor_rho_LS2 = -8888
 overall_factor_phi_LS2 = -8888
@@ -123,7 +127,15 @@ for key in data.keys():
         continue
     if(("_LS1" in key)==False):
         continue
-    
+
+    if("_rho" in key and data[key][0]==0 and data[key][1]==0):
+        continue
+        
+    if("_phi" in key):
+        index = list_keys.index(key)
+        if("_rho" in list_keys[index + 1] and data[list_keys[index + 1]][0]==0):
+            continue
+
     if("_phi" in key):
         data[key][0] = data[key][0] + arr_phi[counter]
     if("_rho" in key):

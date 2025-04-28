@@ -194,6 +194,19 @@ int main(int argc,char *argv[]){
         }
 
         mynll[idx_sample] = new NLL_estimator(Amplitude_obj[idx_sample],LS1par_list[idx_sample],LS2par_list[idx_sample],Respar_list[idx_sample]);
+
+        //=================================
+        //Load the fit type
+        //=================================
+        string fit_type_name = "nFit";
+        if(root["set_fit_type"].isMember("fit_type")){fit_type_name = root["set_fit_type"]["fit_type"].asString();}
+        if(fit_type_name=="nFit"){mynll[idx_sample]->set_fit_type(0,"",1);}
+        if(fit_type_name=="cFit"){
+            string PDF_bg_name = root["set_fit_type"]["PDF_bg"].asString();
+            double bg_ratio = root["set_fit_type"]["bg_ratio"].asDouble();
+            mynll[idx_sample]->set_fit_type(1,PDF_bg_name,bg_ratio);
+        }
+        
         //=================================
         //Set data load
         //=================================

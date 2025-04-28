@@ -273,5 +273,13 @@ void Draw_projection_pull(){
     Draw(chain_info,"phi23","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi_{23}","Events / (0.12)", "./plot/phi23.png");
     Draw(chain_info,"phi13","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi_{13}","Events / (0.12)", "./plot/phi13.png");
     Draw(chain_info,"phi12","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi_{12}","Events / (0.12)", "./plot/phi12.png");
+
+    Draw(chain_info,"second_cos_c1","weight_tot","weight_component",-1,1,50,"cos#theta^{c1}_{sec}","Events / (0.04)", "./plot/second_cos_c1.png");
+    Draw(chain_info,"second_cos_c2","weight_tot","weight_component",-1,1,50,"cos#theta^{c2}_{sec}","Events / (0.04)", "./plot/second_cos_c2.png");
+    Draw(chain_info,"second_cos_c3","weight_tot","weight_component",-1,1,50,"cos#theta^{c3}_{sec}","Events / (0.04)", "./plot/second_cos_c3.png");
+
+    Draw(chain_info,"second_phi_c1","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi^{c1}_{sec}","Events / (0.12)", "./plot/second_phi_c1.png");
+    Draw(chain_info,"second_phi_c2","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi^{c2}_{sec}","Events / (0.12)", "./plot/second_phi_c2.png");
+    Draw(chain_info,"second_phi_c3","weight_tot","weight_component",-M_PI,+M_PI,50,"#phi^{c3}_{sec}","Events / (0.12)", "./plot/second_phi_c3.png");
     
 }
