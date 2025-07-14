@@ -363,6 +363,16 @@ void Minimize::Print_FitFraction(int my_idx_nll, TString save_file){
         }
     }
 
+    ofstream outfile;
+    outfile.open(save_file+".dat");
+    for(int i=0;i<nchain;i++){
+        for(int j=0;j<nchain;j++){
+            outfile<<std::fixed<<std::setprecision(4)<<Fit_fraction[i][j]<<" "<<Fit_fraction_err[i][j]<<" ";
+        }
+        outfile<<endl;
+    }
+    outfile.close();
+
     for(int i=0;i<nchain;i++){delete Fit_fraction[i];}
     delete Fit_fraction;
     for(int i=0;i<nchain;i++){delete Fit_fraction_err[i];}

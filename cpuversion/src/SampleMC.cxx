@@ -46,6 +46,8 @@ int main(int argc,char *argv[]){
         int sizeofsdm = root["SDM"].size();
         double* SDM = new double[sizeofsdm];
         for(int i=0;i<sizeofsdm;i++){SDM[i] = root["SDM"][i].asDouble();}
+        double myQ0 = 0.197321/0.59;
+        if(root.isMember("myQ0")){myQ0 = root["myQ0"].asDouble();}
         //=================================
         //Read mom & daus information
         //=================================
@@ -76,6 +78,7 @@ int main(int argc,char *argv[]){
         //=================================
         Amplitude_obj[idx_sample] = new Amplitude(particle_list);
         Amplitude_obj[idx_sample]->SetSDM(SDM);
+        Amplitude_obj[idx_sample]->SetmyQ0(myQ0);
 
         bool is_set_sec = root["set_sec_decay"]["is_set_sec"].asBool();
         if(is_set_sec==true){

@@ -391,6 +391,8 @@ double NLL_estimator::Cal_log_likelihood_cFit(){
     CalPDF(array_device_evt_mc,evt_mc,Amp2_mc);
     CalPDF(array_device_evt_dt,evt_dt,Amp2_dt);
     for(int j=0;j<evt_mc;j++){Normalization_factor_sig = Normalization_factor_sig + Amp2_mc[j]/evt_mc;}
+    //Automatically assign a background ratio
+    if(bg_ratio==-1){bg_ratio = double(evt_dt-evt_bg)/evt_dt;}
 
     double lnL = 0;
     for(int i=0;i<evt_dt;i++){

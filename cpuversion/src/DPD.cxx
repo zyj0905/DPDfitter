@@ -2,8 +2,6 @@
 #include "../include/DPD.h"
 #include "../include/CGcoeff_HASH.h"
 
-DPD::DPD(){}
-
 //The weigner small D function
 //Cited from https://en.wikipedia.org/wiki/Wigner_D-matrix
 //In the form of $d^{j}_{m^\prime,m}(\beta)$

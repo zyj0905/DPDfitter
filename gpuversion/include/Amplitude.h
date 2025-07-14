@@ -13,6 +13,7 @@ class Amplitude{
         DecayChain array_chain[20];
         //Secondary decays
         int idx_sec; int type_sec;
+        double myQ0;
         
         Amplitude(particle particle_list[4]){
             spin_mom = particle_list[0].spin; spin_dau[0] = particle_list[1].spin; spin_dau[1] = particle_list[2].spin; spin_dau[2] = particle_list[3].spin;
@@ -21,6 +22,7 @@ class Amplitude{
         }
         void AddDecayChain(DecayChain chain){array_chain[nchain] = chain;nchain++;}
         void SetSDM(double* SDM){for(int i=0;i<pow(int(spin_mom*2+1),2);i++){ Spin_Density_Matrix[i] = SDM[i];}}
+        void SetmyQ0(double Q0){myQ0 = Q0;}
         void Add_Secondary_Decay(int m_type_sec, int m_idx_sec){type_sec = m_type_sec;idx_sec = m_idx_sec;}
 
         int Get_total_LS1coeff_par(){

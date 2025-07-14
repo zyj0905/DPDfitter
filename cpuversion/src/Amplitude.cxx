@@ -2,7 +2,7 @@
 #include "../include/Amplitude.h"
 
 DeviceComplex Amplitude::SumDecayChain(Event* evt, double nu, double lam[3]){
-    DPD DPD_obj;
+    DPD DPD_obj(myQ0);
     DeviceComplex DPD_sum(0.0,0.0);
     for(int idx_chain=0;idx_chain<nchain;idx_chain++){
         double spin_isobar = array_chain[idx_chain].intermediate.spin;
@@ -20,7 +20,7 @@ DeviceComplex Amplitude::SumDecayChain(Event* evt, double nu, double lam[3]){
 }
 
 DeviceComplex Amplitude::SumOverNu(Event* evt, double Lamb, double lam[3]){
-    DPD DPD_obj;
+    DPD DPD_obj(myQ0);
     DeviceComplex Nu_sum(0.0);
     for(double nu=-spin_mom;nu<=spin_mom;nu++){
         DeviceComplex wignerD = (DPD_obj.Wigner_bigD(spin_mom,Lamb,nu,evt->_alpha,evt->_beta,evt->_gamma)).conjugate();
@@ -30,7 +30,7 @@ DeviceComplex Amplitude::SumOverNu(Event* evt, double Lamb, double lam[3]){
 }
 
 DeviceComplex Amplitude::Amp_Secondary_Decay(Event* evt, double lam, int type){
-    DPD DPD_obj;
+    DPD DPD_obj(myQ0);
     //Vpp vertex
     if(type==0){
         return (DPD_obj.Wigner_bigD(1,lam,0,evt->_second_phi,evt->_second_theta,0)).conjugate();

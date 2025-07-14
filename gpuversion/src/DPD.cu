@@ -2,8 +2,6 @@
 #include "../include/DPD.h"
 #include "../include/CGcoeff_HASH.h"
 
-__device__ DPD::DPD(){}
-
 //The weigner small D function
 //Cited from https://en.wikipedia.org/wiki/Wigner_D-matrix
 //In the form of $d^{j}_{m^\prime,m}(\beta)$
@@ -264,7 +262,6 @@ __device__ double DPD::CG_coeff(double j1, double m1, double j2, double m2, doub
 
 __device__ double DPD::Blatt_Weisskopf_factor(double Q, int L){
     //Here Q0 is a hadron "scale" parameter Q0 =0.197321/R GeV/c, where R is the radius of the centrifugal barrier in fm.
-    const double Q0 = 0.197321/0.59;
     if(L==0){return 1.0;}
     if(L==1){return sqrt(2.0/(Q*Q+Q0*Q0));}
     if(L==2){return sqrt(13.0/(Q*Q*Q*Q+3.0*Q0*Q0*Q*Q+9.0*Q0*Q0*Q0*Q0));}

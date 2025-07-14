@@ -8,7 +8,7 @@
 
 class DPD{
     public:
-        __device__ DPD();
+        __device__ DPD(double myQ0){Q0 = myQ0;}//The default value is Q0 = 0.197321/0.59
         __device__ double factorial(int x);
         __device__ double power_double_int(double a, int n){
             double result(1.0);
@@ -24,5 +24,8 @@ class DPD{
         __device__ double Helicity_LScoupling(double p, int L);
         __device__ DeviceComplex Helicity_HCcoupling(double J, double j1, double lam1, double j2, double lam2, double mom, DecayChain* mychain, int type_ls);
         __device__ DeviceComplex Dalita_plot_function(double J, double s, double nu, double lam[3], double spin[3], Event* evt, int k, DecayChain* mychain);
+
+    private:
+        double Q0;
 };
 #endif //DPD_H

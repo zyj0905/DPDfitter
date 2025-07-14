@@ -365,7 +365,7 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
         PDF_MC_component = new double**[nchain];
         for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
             PDF_MC_component[idx_ch1] = new double*[nchain];
-            for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            for(int idx_ch2=idx_ch1;idx_ch2<nchain;idx_ch2++){
                 std::cout<<"NOW is save component: "<<idx_ch1<<" "<<idx_ch2<<endl;
                 if(file_type==2){
                     PDF_MC_component[idx_ch1][idx_ch2] = new double[evt_mc];
@@ -556,7 +556,7 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
             int nchain = amp_obj->nchain;
             if(save_component==1){
                 for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
-                    for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+                    for(int idx_ch2=idx_ch1;idx_ch2<nchain;idx_ch2++){
                         m_weight_component[idx_ch1][idx_ch2] = PDF_MC_component[idx_ch1][idx_ch2][evt_loop]*norm_factor;
                     }
                 }
@@ -570,7 +570,7 @@ void NLL_estimator::save_root(int file_type, TString file_name_out, int save_com
         delete PDF_MC_tot;
         int nchain = amp_obj->nchain;
         for(int idx_ch1=0;idx_ch1<nchain;idx_ch1++){
-            for(int idx_ch2=0;idx_ch2<nchain;idx_ch2++){
+            for(int idx_ch2=idx_ch1;idx_ch2<nchain;idx_ch2++){
                 delete PDF_MC_component[idx_ch1][idx_ch2];
             }
             delete PDF_MC_component[idx_ch1];
