@@ -1,0 +1,92 @@
+{
+
+    "SDM":[1,0,0,0,0,0,0,0,1],
+
+    "Mom":{
+        "name": "vpho",
+        "spin": 1,
+        "p-parity": -1
+    },
+    
+    "Daus":{
+        "Dau1":{
+            "name": "Dst0",
+            "spin": 1,
+            "p-parity": -1
+        },
+        "Dau2":{
+            "name": "Dm",
+            "spin": 0,
+            "p-parity": -1
+        },
+        "Dau3":{
+            "name": "Pip",
+            "spin": 0,
+            "p-parity": -1
+        }
+    },
+
+    "set_sec_decay":{
+        "is_set_sec": true,
+        "type_sec": 0,
+        "idx_sec": 1,
+        "p4_sec": ["p4_sub_D","p4_sub_Pi"]
+    },
+
+    "Res":{
+        "A_Zc_3900":{
+            "name": "A_Zc_3900",
+            "res_par": [3.9015,0.075,0.135,3.096,2.0325,1.865,2.010],
+            "spin": 1,
+            "p-parity": 1,
+            "dynamic_type": 3,
+            "idx_isobar": 3
+        },
+        "DPi_NR1m":{
+            "name": "DPi_NR1m",
+            "res_par": [],
+            "spin": 1,
+            "p-parity": -1,
+            "dynamic_type": 1,
+            "idx_isobar": 1
+        },
+        "D1_2420":{
+            "name": "D1_2420",
+            "res_par": [2.4221,0.0313],
+            "spin": 1,
+            "p-parity": 1,
+            "dynamic_type": 0,
+            "idx_isobar": 2
+        },
+        "D2_2460":{
+            "name": "D2_2460",
+            "res_par": [2.4611,0.0473],
+            "spin": 2,
+            "p-parity": 1,
+            "dynamic_type": 0,
+            "idx_isobar": 2
+        }
+    },
+
+    "mc":{
+        "filename": "/hpcfs/bes/mlgpu/liaoyp/New-PWA/DstDpi/RootSet/4220/Dst0DmPip_mc.root",
+        "chainname": "ana",
+        "p4_final": ["p4_Dst_truth","p4_D_truth","p4_Pi_truth"]
+    },
+    "Truth":{
+        "filename": "/hpcfs/bes/mlgpu/liaoyp/New-PWA/DstDpi/RootSet/4220/Dst0DmPip_mc.root",
+        "chainname": "truth",
+        "p4_final": ["p4_Dst","p4_D","p4_Pi"]
+    },
+
+    "para_list":{
+        "listin": "./par_in/Dst0DmPip_par.json",
+        "listout": "./par_out/Dst0DmPip_par.json"
+    },
+
+    "save_root":{
+        "mc": "./out/output_mc_Dst0DmPip.root",
+        "Truth": "./out/output_truth_mc_Dst0DmPip.root"
+    }
+    
+}
