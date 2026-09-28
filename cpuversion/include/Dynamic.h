@@ -30,11 +30,12 @@ class Dynamic{
 
         DeviceComplex eval(double sqrt_s, Event* evt, int idx_isobar){
             if(type==0){return fun0(sqrt_s);} //constant width BW
-            if(type==1){return fun1(sqrt_s);} //constant
-            if(type==2){return fun2(sqrt_s,evt,idx_isobar);} //BW with running width
-            if(type==3){return fun3(sqrt_s,evt,idx_isobar);} // Flatte-like formula S-wave
-            if(type==4){return fun4(sqrt_s,evt,idx_isobar);} //Zc lineshape with D*D (in S and D wave) contribution + the others
+            if(type==1){return fun1(sqrt_s);} //constant no resonant
+            if(type==2){return fun2(sqrt_s);} //BW with running width
+            if(type==3){return fun3(sqrt_s);} //Flatte-like formula S-wave
+            if(type==4){return fun4(sqrt_s);} //Zc lineshape with D*D (in S and D wave) contribution + the others
             if(type==5){return fun5(sqrt_s);} //Dpi S-wave based on the CubicSpline from PhysRevD.94.072001
+            if(type==6){return fun6(sqrt_s, evt, idx_isobar);}//Including the triangle-plot into D1D amplitude, according to 2201.08253v2, Eq. 26
             printf("NO available type in eval!\n");
             return 0.0;
         }
@@ -77,7 +78,7 @@ class Dynamic{
             return 0.0;
         }
 
-        DeviceComplex fun2(double sqrt_s, Event* evt, int idx_isobar){
+        DeviceComplex fun2(double sqrt_s){
             double mass = pars[0];
             double width = pars[1];
             int L = pars[2];
@@ -97,7 +98,7 @@ class Dynamic{
 
         //https://docbes3.ihep.ac.cn/DocDB/0002/000216/030/zc_memo.pdf
         //Eq.~11
-        DeviceComplex fun3(double sqrt_s, Event* evt, int idx_isobar){
+        DeviceComplex fun3(double sqrt_s){
             double mass = pars[0];
             int Nchannel = (num_par-1)/3;
             DeviceComplex gterm(0,0);
@@ -114,7 +115,7 @@ class Dynamic{
         }
 
         //Zc lineshape with D*D (in S and D wave) contribution + the others
-        DeviceComplex fun4(double sqrt_s, Event* evt, int idx_isobar){
+        DeviceComplex fun4(double sqrt_s){
             double mass = pars[0];
             DeviceComplex g01 = DeviceComplex(pars[1]*cos(pars[2]),pars[1]*sin(pars[2]));
             DeviceComplex g21 = DeviceComplex(pars[3]*cos(pars[4]),pars[3]*sin(pars[4]));
@@ -145,6 +146,98 @@ class Dynamic{
             if(idx_sqrt_s<0){idx_sqrt_s=0;}
             if(idx_sqrt_s>=200){idx_sqrt_s=199;}
             return DeviceComplex(Re_Amp[idx_sqrt_s],Im_Amp[idx_sqrt_s]);
+        }
+
+        //Including the triangle-plot into D1D amplitude, according to 2201.08253v2, Eq. 26
+        DeviceComplex fun6(double sqrt_s, Event* evt, int idx_isobar){
+            double mass = pars[0];
+            double width = pars[1];
+            DeviceComplex BW_D1 = 1.0/DeviceComplex(sqrt_s*sqrt_s-mass*mass,mass*width);
+            //Some input paras
+            double md1 = 2.420;
+            double gd1 = 0.031;
+            double mdstr = 2.010;
+            double md = 1.869;
+            double mpi = 0.139;
+            double mjpsi = 3.097;
+            double hc = 0.197327;
+            double CZ = -0.177*pow(1/hc,2);
+            double C12 = 0.005*pow(1/hc,2);
+            double b = 0.0;
+            double mu = 1.0;
+            double pi = 3.1415926;
+            double a2 = -3.0;
+
+            //First cal_I_nom
+            double s = evt->_mass2_mom0;
+            double M = sqrt(s);
+            double m23 = sqrt(evt->sigma3_func());//for D* D, hence the order of particles should be D* D pi!
+            double eps = 1E-8;
+
+            double m1 = md1;
+            double m2 = md;
+            double m3 = mdstr;
+            double mk = mpi;
+
+            double mu_12 = m1 * m2 / (m1 + m2);
+            double mu_23 = m2 * m3 / (m2 + m3);
+
+            double b12 = m1 + m2 - M;
+            double c1 = 2 * mu_12 * b12;
+
+            double ek = (s - m23*m23 + mk*mk)/(2*M);
+            //double qk = sqrt( (s - (mk + m23)*(mk + m23)) * (s - (mk - m23)*(mk - m23)) )/(2*M);
+            double qk = break_mom_abs(M,mk,m23);
+            double c2 = 2*mu_23*(m2 + m3 + ek - M) + qk*qk * mu_23 / m3;
+            double a = pow(mu_23*qk/m3,2);
+
+            double fac = mu_12*m3/(2*pi*qk) * 1.0/(8*md1*md*mdstr);
+            DeviceComplex arc1 = ( 0.5*(c2 - c1)/ (a*(c1 - DeviceComplex(0,1)*eps)).sqrt() ).atan();
+            DeviceComplex arc2 = ( 0.5*(c2 - c1 - 2*a)/(a*(c2 - a - DeviceComplex(0,1)*eps)).sqrt() ).atan();
+            DeviceComplex cal_I_nom = fac*(arc1 - arc2);
+
+            //Then cal_G_nom
+            double w = m23;
+            double sprime = w*w;
+            double delta = md*md- mdstr*mdstr;
+            double qcm = break_mom_abs(w,md,mdstr);
+            double prefix = (1.0/16.0/pi/pi);
+            double term1 = a2+2*log(md/mu)+2*(mdstr*mdstr-md*md+sprime)/2.0/sprime*log(mdstr/md);
+            DeviceComplex term2 = qcm/w*(
+                (DeviceComplex(sprime-delta+2*qcm*w,0)).ln()
+                +(DeviceComplex(sprime+delta+2*qcm*w,0)).ln()
+                -(DeviceComplex(-sprime+delta+2*qcm*w,0)).ln()
+                -(DeviceComplex(-sprime-delta+2*qcm*w,0)).ln()
+            );
+            DeviceComplex cal_G_nom = prefix*(term1+term2);
+
+            //Then cal_G_jpsipi_nom
+            double a2p = -2.77;
+            delta = mjpsi*mjpsi - mpi*mpi;
+            qcm = break_mom_abs(w,mjpsi,mpi);
+            term1 = a2p+2*log(mjpsi/mu)+2*(mpi*mpi-mjpsi*mjpsi+sprime)/2.0/sprime*log(mpi/mjpsi);
+            term2 = qcm/w*(
+                (DeviceComplex(sprime-delta+2*qcm*w,0)).ln()
+                +(DeviceComplex(sprime+delta+2*qcm*w,0)).ln()
+                -(DeviceComplex(-sprime+delta+2*qcm*w,0)).ln()
+                -(DeviceComplex(-sprime-delta+2*qcm*w,0)).ln()
+            );
+            DeviceComplex cal_G_jpsipi_nom = prefix*(term1+term2);
+
+            //Then cal_T
+            double V12 = C12*4*sqrt(mjpsi*mpi*md*mdstr);
+            double V22_slaph = (CZ+b/2.0/(md+mdstr)*(s-pow(md+mdstr,2)));
+            double V22 = V22_slaph * 4*sqrt(md*mdstr*md*mdstr);
+            DeviceComplex g1 = cal_G_jpsipi_nom;
+            DeviceComplex g2 = cal_G_nom;
+            DeviceComplex den = 1 - g2*V22 - g1*g2*V12*V12;
+            DeviceComplex num22 = V22 + g1*V12*V12;
+            DeviceComplex cal_T = num22/den;
+
+            DeviceComplex T22 = cal_T;
+            DeviceComplex I = cal_I_nom;
+
+            return BW_D1 + T22 * I;    
         }
 };
 

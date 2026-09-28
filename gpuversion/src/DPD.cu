@@ -81,7 +81,7 @@ __device__ double DPD::Wigner_smallD_Jle4(int J, int _M, int _Mp, double beta){
         if(M==+5&&Mp==+3){return factor*-sqrt(5.)*sin(0.5*beta)*power_double_int(cos(0.5*beta),4);}
         if(M==+5&&Mp==+1){return factor*+sqrt(10.)*power_double_int(sin(0.5*beta),2)*power_double_int(cos(0.5*beta),3);}
         if(M==+5&&Mp==-1){return factor*-sqrt(10.)*power_double_int(sin(0.5*beta),3)*power_double_int(cos(0.5*beta),2);}
-        if(M==+5&&Mp==-3){return factor*+sqrt(5.)*power_double_int(sin(0.5*beta),4)*cos(beta);}
+        if(M==+5&&Mp==-3){return factor*+sqrt(5.)*power_double_int(sin(0.5*beta),4)*cos(0.5*beta);}
         if(M==+5&&Mp==-5){return factor*-power_double_int(sin(0.5*beta),5);}
 
         if(M==+3&&Mp==+3){return factor*power_double_int(cos(0.5*beta),3)*(1-5*power_double_int(sin(0.5*beta),2));}

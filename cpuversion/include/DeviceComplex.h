@@ -59,15 +59,15 @@ public:
     }
 
     double rho() const {
-        return sqrtf(real * real + imag * imag);
+        return std::sqrt(real * real + imag * imag);
     }
     double rho2() const {
         return real * real + imag * imag;
     }
     double phi() const {
-        double theta = acos(real/sqrtf(real * real + imag * imag));
-        if(imag>0){return theta;}
-        else{return theta+3.1415927;}
+        double theta = acos(real/std::sqrt(real * real + imag * imag));
+        if(imag>=0){return theta;}
+        else{return -1.0*theta;}
      }
 
     DeviceComplex reciprocal() const {
@@ -76,6 +76,22 @@ public:
     }
     DeviceComplex conjugate() const {
         return DeviceComplex(real, -imag);
+    }
+
+    DeviceComplex sqrt() const {
+        double myrho = std::sqrt(rho());
+        double myphi = phi() * 0.5;
+        return DeviceComplex(myrho*cos(myphi),myrho*sin(myphi));
+    }
+
+    DeviceComplex ln() const {
+        double myrho = rho();
+        double myphi = phi();
+        return log(myrho) + DeviceComplex(0,1) * myphi;
+    }
+
+    DeviceComplex atan() const {
+        return 1.0/(DeviceComplex(0,2)) * ((DeviceComplex(0,1)-DeviceComplex(real,imag))/(DeviceComplex(0,1)+DeviceComplex(real,imag))).ln();
     }
     void print() const {
         printf("%f + %fi\n", real, imag);
@@ -87,19 +103,6 @@ public:
         }
         return *this;
     }
-
-    //pow and sqrt
-    //__device__ DeviceComplex power(double n) const {
-    //    double myrho = pow(rho(),n);
-    //    double myphi = (phi())*n; //multi solution not considered!
-    //    return DeviceComplex(myrho*cos(myphi),myrho*sin(myphi));
-    //}
-
-    //static DeviceComplex power(DeviceComplex base, double exponent) {
-    //     double myrho = pow(base.rho(),exponent);
-    //     double myphi = base.phi()/exponent; //multi solution not considered!
-    //     return DeviceComplex(myrho*cos(myphi),myrho*sin(myphi));
-    // }
     
 };
 

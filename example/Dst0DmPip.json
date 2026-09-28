@@ -1,0 +1,113 @@
+{
+
+    "SDM":[1,0,0,0,0,0,0,0,1],
+
+    "Mom":{
+        "name": "vpho",
+        "spin": 1,
+        "p-parity": -1
+    },
+    
+    "Daus":{
+        "Dau1":{
+            "name": "Dst0",
+            "spin": 1,
+            "p-parity": -1
+        },
+        "Dau2":{
+            "name": "Dm",
+            "spin": 0,
+            "p-parity": -1
+        },
+        "Dau3":{
+            "name": "Pip",
+            "spin": 0,
+            "p-parity": -1
+        }
+    },
+
+    "set_sec_decay":{
+        "is_set_sec": true,
+        "type_sec": 0,
+        "idx_sec": 1,
+        "p4_sec": ["p4_sub_D","p4_sub_Pi"]
+    },
+
+	"set_fit_type":{
+        "fit_type": "cFit",
+        "PDF_bg": "PDF_bg",
+        "bg_ratio": -1
+    },
+
+    "Res":{
+        "A_Zc_3900":{
+            "name": "A_Zc_3900",
+            "res_par": [3.9015,0.075,0.135,3.096,2.0325,1.865,2.010],
+            "spin": 1,
+            "p-parity": 1,
+            "dynamic_type": 3,
+            "idx_isobar": 3
+        },
+        "DPi_NR1m":{
+            "name": "DPi_NR1m",
+            "res_par": [],
+            "spin": 1,
+            "p-parity": -1,
+            "dynamic_type": 1,
+            "idx_isobar": 1
+        },
+        "D1_2420":{
+            "name": "D1_2420",
+            "res_par": [2.4221,0.0313],
+            "spin": 1,
+            "p-parity": 1,
+            "dynamic_type": 0,
+            "idx_isobar": 2
+        },
+        "D2_2460":{
+            "name": "D2_2460",
+            "res_par": [2.4611,0.0473],
+            "spin": 2,
+            "p-parity": 1,
+            "dynamic_type": 0,
+            "idx_isobar": 2
+        }
+    },
+
+
+    "data":{
+        "filename": "/afs/ihep.ac.cn/users/z/zengyijia/gpupwa/Helicity/DstarDpi/prestudy/root_sample/4220/Dst0DmPip_data_withpdf.root",
+        "chainname": "ana",
+        "p4_final": ["p4_Dst0","p4_Dm","p4_Pip"]
+    },
+    "mc":{
+        "filename": "/afs/ihep.ac.cn/users/z/zengyijia/gpupwa/Helicity/DstarDpi/prestudy/root_sample/4220/Dst0DmPip_mc_withpdf.root",
+        "chainname": "ana",
+        "p4_final": ["p4_Dst0","p4_Dm","p4_Pip"]
+    },
+    "bg":{
+        "filename": "/afs/ihep.ac.cn/users/z/zengyijia/gpupwa/Helicity/DstarDpi/prestudy/root_sample/4220/Dst0DmPip_bg.root",
+        "chainname": "ana",
+        "p4_final": ["p4_Dst0","p4_Dm","p4_Pip"]
+    },
+
+    "Fit_stragety":{
+        "is_scan": false,
+        "is_migrad": true,
+        "is_hesse": true
+    },
+
+    "para_list":{
+        "random_number": -1,
+        "listin": "./par_in/Dst0DmPip_par.json",
+        "listout": "./par_out/Dst0DmPip_par.json"
+    },
+
+    "Cal_FitFraction": "./out/output_FFs_Dst0DmPip.root",
+
+    "save_root":{
+        "data": "./out/output_data_Dst0DmPip.root",
+        "mc": "./out/output_mc_Dst0DmPip.root",
+        "bg": "./out/output_bg_Dst0DmPip.root"
+    }
+}
